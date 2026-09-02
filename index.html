@@ -607,6 +607,42 @@ input, select {
 }
 .death-card h2 { font-family: "Press Start 2P", monospace; font-size: 14px; margin-bottom: 10px; }
 .death-card p { opacity: 0.85; margin-bottom: 14px; }
+#mp-slots .room {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 8px; background: #1a2430; border: 1px solid #000;
+  border-radius: 10px; padding: 8px; margin: 6px 0;
+}
+#mp-chat {
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  left: auto;
+  bottom: auto;
+  width: min(280px, 42vw);
+  z-index: 18;
+  background: rgba(16,12,8,0.78);
+  border: 1px solid #000;
+  border-radius: 10px;
+  padding: 6px 8px;
+  pointer-events: auto;
+}
+#mp-log { height: 56px; overflow: auto; font-size: 12px; line-height: 1.3; }
+#mp-log .sys { opacity: 0.75; font-style: italic; }
+#mp-in {
+  width: 100%; margin-top: 4px; background: #10141c; color: #f0e6d2;
+  border: 1px solid #000; border-radius: 8px; padding: 5px 6px;
+  font-size: 13px;
+}
+@media (max-width: 720px) {
+  #mp-chat {
+    top: max(8px, env(safe-area-inset-top));
+    right: 8px;
+    width: min(196px, 44vw);
+    padding: 4px 6px;
+  }
+  #mp-log { height: 44px; font-size: 11px; }
+  #topbar { padding-right: 210px; }
+}
 
   </style>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -766,6 +802,7 @@ input, select {
         </div>
 
         <div id="menu-home">
+          <button class="big-btn" id="btn-online" type="button">Jogar online</button>
           <button class="big-btn" id="btn-create" type="button" data-i18n="menu.create">Criar sala</button>
           <button class="big-btn ghost" id="btn-load" type="button" data-i18n="menu.load">Carregar sala</button>
           <button class="big-btn ghost" id="btn-import" type="button" data-i18n="menu.import">Importar mapa</button>
@@ -824,6 +861,21 @@ input, select {
           <button class="big-btn ghost" type="button" id="load-back">Voltar</button>
         </div>
 
+        <div id="menu-online" class="hidden">
+          <label>Servidor
+            <input id="mp-host" placeholder="localhost:8787" />
+          </label>
+          <label>Usuário <input id="mp-user" maxlength="16" /></label>
+          <label>Senha <input id="mp-pass" type="password" /></label>
+          <div class="row">
+            <button class="big-btn" type="button" id="mp-login">Entrar</button>
+            <button class="big-btn ghost" type="button" id="mp-reg">Criar conta</button>
+          </div>
+          <p class="tiny" id="mp-status">As 5 salas do servidor.</p>
+          <div id="mp-slots"></div>
+          <button class="big-btn ghost" type="button" id="online-back">Voltar</button>
+        </div>
+
         <form id="form-pass" class="hidden">
           <p id="pass-room-name"></p>
           <label>Senha da sala
@@ -863,6 +915,10 @@ input, select {
       <div id="hot-slots"></div>
     </div>
 
+    <div id="mp-chat" class="hidden">
+      <div id="mp-log"></div>
+      <input id="mp-in" maxlength="180" placeholder="Enter: chat  ·  /comando" />
+    </div>
     <button id="btn-pause" class="round-btn hidden" type="button">☰</button>
   </div>
 
@@ -1469,15 +1525,34 @@ input, select {
         }
       }
     }
+    if (state.spawn) {
+      const keep = (tx, ty) => !inSpawnRadius(tx * TILE + TILE / 2, ty * TILE + TILE / 2, 6);
+      for (let i = trees.length - 1; i >= 0; i--) if (!keep(trees[i].tx, trees[i].ty)) trees.splice(i, 1);
+      for (let i = rocks.length - 1; i >= 0; i--) if (!keep(rocks[i].tx, rocks[i].ty)) rocks.splice(i, 1);
+      for (let i = ores.length - 1; i >= 0; i--) if (!keep(ores[i].tx, ores[i].ty)) ores.splice(i, 1);
+    }
+    if (hash2(cx, cy, seed + 17) > 0.55) {
+      const lx = 2 + Math.floor(hash2(cx, cy, seed + 18) * 12);
+      const ly = 2 + Math.floor(hash2(cx, cy, seed + 19) * 12);
+      const tx = cx * CHUNK + lx, ty = cy * CHUNK + ly;
+      const i = ty * CHUNK + lx;
+      if (tiles[i] === TILES.GRASS) {
+        const kind = hash2(cx, cy, seed + 20) > 0.5 ? "vaca" : "ovelha";
+        animals.push(makeAnimal(tx * TILE + 20, ty * TILE + 20, kind, "c" + cx + "_" + cy));
+      }
+    }
     const chunk = { cx, cy, tiles, trees, rocks, ores, enemies: [], placed: [], animals };
     stampStructures(chunk);
     state.chunks.set(key, chunk);
+    replayEditsOnChunk(chunk);
     return chunk;
   }
 
   function stampStructures(ch) {
     const putChest = (tx, ty, lootId, n) => {
       if (tx < ch.cx * CHUNK || tx >= (ch.cx + 1) * CHUNK || ty < ch.cy * CHUNK || ty >= (ch.cy + 1) * CHUNK) return;
+      ch.gonePlaced = ch.gonePlaced || {};
+      if (ch.gonePlaced[tx + "," + ty]) return;
       if ((ch.placed || []).some((p) => p.tx === tx && p.ty === ty)) return;
       ch.placed.push({
         tx, ty, id: "bau", hp: 7,
@@ -1704,9 +1779,10 @@ input, select {
   }
 
   function placedAt(tx, ty) {
-    if (state.dim) return (state.dim.placed || []).find((p) => p.tx === tx && p.ty === ty);
+    if (isGone("placed", tx, ty)) return null;
+    if (state.dim) return (state.dim.placed || []).find((p) => (p.tx | 0) === (tx | 0) && (p.ty | 0) === (ty | 0));
     const ch = ensureChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK));
-    return (ch.placed || []).find((p) => p.tx === tx && p.ty === ty);
+    return (ch.placed || []).find((p) => (p.tx | 0) === (tx | 0) && (p.ty | 0) === (ty | 0));
   }
 
   function onBoatTile(tx, ty) {
@@ -1744,20 +1820,32 @@ input, select {
     return false;
   }
 
+  function goneKey(tx, ty) { return (tx | 0) + "," + (ty | 0); }
+  function markGone(kind, tx, ty) {
+    state.gone = state.gone || { tree: {}, rock: {}, ore: {}, placed: {} };
+    state.gone[kind] = state.gone[kind] || {};
+    state.gone[kind][goneKey(tx, ty)] = 1;
+  }
+  function isGone(kind, tx, ty) {
+    return !!(state.gone && state.gone[kind] && state.gone[kind][goneKey(tx, ty)]);
+  }
   function treeAt(tx, ty) {
     if (state.dim) return null;
+    if (isGone("tree", tx, ty)) return null;
     const ch = ensureChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK));
-    return ch.trees.find((t) => t.tx === tx && t.ty === ty);
+    return (ch.trees || []).find((t) => (t.tx | 0) === (tx | 0) && (t.ty | 0) === (ty | 0));
   }
   function rockAt(tx, ty) {
-    if (state.dim) return (state.dim.rocks || []).find((t) => t.tx === tx && t.ty === ty) || null;
+    if (isGone("rock", tx, ty)) return null;
+    if (state.dim) return (state.dim.rocks || []).find((t) => (t.tx | 0) === (tx | 0) && (t.ty | 0) === (ty | 0)) || null;
     const ch = ensureChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK));
-    return ch.rocks.find((t) => t.tx === tx && t.ty === ty);
+    return (ch.rocks || []).find((t) => (t.tx | 0) === (tx | 0) && (t.ty | 0) === (ty | 0));
   }
   function oreAt(tx, ty) {
-    if (state.dim) return (state.dim.ores || []).find((t) => t.tx === tx && t.ty === ty) || null;
+    if (isGone("ore", tx, ty)) return null;
+    if (state.dim) return (state.dim.ores || []).find((t) => (t.tx | 0) === (tx | 0) && (t.ty | 0) === (ty | 0)) || null;
     const ch = ensureChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK));
-    return (ch.ores || []).find((t) => t.tx === tx && t.ty === ty);
+    return (ch.ores || []).find((t) => (t.tx | 0) === (tx | 0) && (t.ty | 0) === (ty | 0));
   }
   function toolInfo(w) {
     const def = (w && ITEM[w.id]) || {};
@@ -1769,9 +1857,10 @@ input, select {
     };
   }
 
-  function makeAnimal(x, y, kind) {
+  function makeAnimal(x, y, kind, id) {
     return {
       type: "animal",
+      id: id || ("a" + Math.floor(x) + "_" + Math.floor(y) + "_" + kind),
       kind,
       x, y,
       hp: kind === "vaca" ? 10 : 6,
@@ -1786,6 +1875,7 @@ input, select {
   }
 
   function trySpawnAnimal() {
+    if (state.online) return;
     if (state.dim) return;
     if (!state.player) return;
     let nearby = 0;
@@ -1817,6 +1907,92 @@ input, select {
       for (const a of (ch.animals || [])) out.push(a);
     }
     return out;
+  }
+
+  function replayEditsOnChunk(ch) {
+    if (!state.netEdits || !state.netEdits.length) return;
+    for (const e of state.netEdits) applyWorldEdit(e, true, ch);
+  }
+
+  function applyWorldEdit(e, replay, onlyChunk) {
+    if (!e || !e.kind) return;
+    const inCh = (tx, ty) => {
+      if (!onlyChunk) return true;
+      return tx >= onlyChunk.cx * CHUNK && tx < (onlyChunk.cx + 1) * CHUNK &&
+             ty >= onlyChunk.cy * CHUNK && ty < (onlyChunk.cy + 1) * CHUNK;
+    };
+    if ((e.kind === "place" || e.kind === "unplace") && inCh(e.tx, e.ty)) {
+      const ch = onlyChunk || ensureChunk(Math.floor(e.tx / CHUNK), Math.floor(e.ty / CHUNK));
+      ch.placed = ch.placed || [];
+      ch.gonePlaced = ch.gonePlaced || {};
+      const pk = e.tx + "," + e.ty;
+      if (e.kind === "unplace" || e.hp <= 0) {
+        ch.placed = ch.placed.filter((p) => !(p.tx === e.tx && p.ty === e.ty));
+        ch.gonePlaced[pk] = 1;
+        markGone("placed", e.tx, e.ty);
+      } else {
+        delete ch.gonePlaced[pk];
+        if (state.gone && state.gone.placed) delete state.gone.placed[pk];
+        const old = ch.placed.find((p) => p.tx === e.tx && p.ty === e.ty);
+        if (old) { old.hp = e.hp; if (e.id) old.id = e.id; if (e.items) old.items = e.items; }
+        else ch.placed.push({ tx: e.tx, ty: e.ty, id: e.id, hp: e.hp || 5, items: e.items || null });
+      }
+    }
+    if (e.kind === "tree" && inCh(e.tx, e.ty)) {
+      const ch = onlyChunk || ensureChunk(Math.floor(e.tx / CHUNK), Math.floor(e.ty / CHUNK));
+      if (e.hp <= 0) {
+        ch.trees = (ch.trees || []).filter((t) => !((t.tx | 0) === (e.tx | 0) && (t.ty | 0) === (e.ty | 0)));
+        markGone("tree", e.tx, e.ty);
+      } else {
+        const t = (ch.trees || []).find((x) => (x.tx | 0) === (e.tx | 0) && (x.ty | 0) === (e.ty | 0));
+        if (t) t.hp = e.hp;
+      }
+    }
+    if (e.kind === "rock" && inCh(e.tx, e.ty)) {
+      const ch = onlyChunk || ensureChunk(Math.floor(e.tx / CHUNK), Math.floor(e.ty / CHUNK));
+      if (e.hp <= 0) {
+        ch.rocks = (ch.rocks || []).filter((t) => !((t.tx | 0) === (e.tx | 0) && (t.ty | 0) === (e.ty | 0)));
+        markGone("rock", e.tx, e.ty);
+      } else {
+        const t = (ch.rocks || []).find((x) => (x.tx | 0) === (e.tx | 0) && (x.ty | 0) === (e.ty | 0));
+        if (t) t.hp = e.hp;
+      }
+    }
+    if (e.kind === "ore" && inCh(e.tx, e.ty)) {
+      const ch = onlyChunk || ensureChunk(Math.floor(e.tx / CHUNK), Math.floor(e.ty / CHUNK));
+      if (e.hp <= 0) {
+        ch.ores = (ch.ores || []).filter((t) => !((t.tx | 0) === (e.tx | 0) && (t.ty | 0) === (e.ty | 0)));
+        markGone("ore", e.tx, e.ty);
+      } else {
+        const t = (ch.ores || []).find((x) => (x.tx | 0) === (e.tx | 0) && (x.ty | 0) === (e.ty | 0));
+        if (t) t.hp = e.hp;
+      }
+    }
+    if (e.kind === "animal") {
+      const a = allAnimals().find((x) => x.id === e.aid);
+      if (a) {
+        if (e.hp != null) a.hp = e.hp;
+        if (e.hp <= 0) a.alive = false;
+        if (e.ax != null) { a.x = e.ax; a.y = e.ay; }
+      } else if (e.akind && e.hp > 0 && !onlyChunk) {
+        const ch = ensureChunk(Math.floor((e.ax || 0) / (TILE * CHUNK)), Math.floor((e.ay || 0) / (TILE * CHUNK)));
+        ch.animals = ch.animals || [];
+        ch.animals.push(makeAnimal(e.ax, e.ay, e.akind, e.aid));
+      }
+    }
+    if (!replay) {
+      state.netEdits = state.netEdits || [];
+      state.netEdits.push(e);
+    }
+  }
+
+  function shareEdit(e) {
+    if (e && (e.kind === "tree" || e.kind === "rock" || e.kind === "ore") && e.hp <= 0) markGone(e.kind, e.tx, e.ty);
+    if (e && e.kind === "unplace") markGone("placed", e.tx, e.ty);
+    if (!state.online) return;
+    state.netEdits = state.netEdits || [];
+    state.netEdits.push(e);
+    mpSend({ type: "edit", ...e });
   }
 
   function makeEnemy(x, y, salt) {
@@ -1937,10 +2113,10 @@ input, select {
     return got;
   }
 
-  function dropItem(id, n, x, y, toward) {
+  function dropItem(id, n, x, y, toward, netDrop) {
     if (!n) return;
     const p = state.player;
-    let vx = (Math.random() - 0.5) * 20, vy = (Math.random() - 0.5) * 20;
+    let vx = 0, vy = 0;
     if (toward && p) {
       const dx = p.x - x, dy = p.y - y;
       const l = Math.hypot(dx, dy) || 1;
@@ -1949,7 +2125,9 @@ input, select {
     }
     if (!state.drops) state.drops = [];
     const s = makeStack(id, n);
-    state.drops.push({ x, y, vx, vy, t: 0, stack: s });
+    const did = (netDrop && netDrop.did) || ("d" + Date.now().toString(36) + Math.floor(Math.random() * 1e3).toString(36));
+    state.drops.push({ did, x, y, vx, vy, t: 0, stack: s, taking: false });
+    if (state.online && !netDrop) mpSend({ type: "drop", did, id, n, x, y });
   }
   function dropOrGive(id, n, tx, ty) {
     const x = tx * TILE + TILE / 2, y = ty * TILE + TILE / 2;
@@ -2252,6 +2430,9 @@ input, select {
     $("chest").classList.add("hidden");
     $("furnace").classList.add("hidden");
     $("bench").classList.add("hidden");
+    if ($("mp-chat")) $("mp-chat").classList.add("hidden");
+    if (net && net.ws) try { net.ws.close(); } catch {}
+    state.online = false;
     if ($("death")) $("death").classList.add("hidden");
     state.dead = false;
     showHome();
@@ -2263,7 +2444,18 @@ input, select {
     $("form-create").classList.add("hidden");
     $("menu-load").classList.add("hidden");
     $("form-pass").classList.add("hidden");
+    if ($("menu-online")) $("menu-online").classList.add("hidden");
   }
+  if ($("btn-online")) $("btn-online").onclick = () => {
+    $("menu-home").classList.add("hidden");
+    $("menu-online").classList.remove("hidden");
+    if ($("mp-host") && !$("mp-host").value) {
+      $("mp-host").value = localStorage.getItem("dl_host") || (location.port === "8787" ? location.host : "localhost:8787");
+    }
+    if (localStorage.getItem("dl_name") && $("mp-user")) $("mp-user").value = localStorage.getItem("dl_name");
+    mpRefresh();
+  };
+  if ($("online-back")) $("online-back").onclick = showHome;
   $("btn-create").onclick = () => {
     $("menu-home").classList.add("hidden");
     $("form-create").classList.remove("hidden");
@@ -2679,9 +2871,67 @@ input, select {
     persist();
     updateHud();
   }
+  function spawnPixel(src) {
+    if (!src) return null;
+    let x = Number(src.x), y = Number(src.y);
+    if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+    if (Math.abs(x) < 80 && Math.abs(y) < 80) {
+      x = x * TILE + TILE / 2;
+      y = y * TILE + TILE / 2;
+    }
+    return { x, y };
+  }
+  function inSpawnRadius(px, py, tiles) {
+    if (!state.spawn) return false;
+    const r = (tiles == null ? 6 : tiles) * TILE;
+    return Math.hypot(px - state.spawn.x, py - state.spawn.y) < r;
+  }
+  function inSpawnGuard() {
+    if (!state.online || !state.player || !state.spawn) return false;
+    return inSpawnRadius(state.player.x, state.player.y, 6);
+  }
+  function clearSpawnArea() {
+    if (!state.spawn) return;
+    const stx = Math.floor(state.spawn.x / TILE);
+    const sty = Math.floor(state.spawn.y / TILE);
+    for (let ty = sty - 6; ty <= sty + 6; ty++) {
+      for (let tx = stx - 6; tx <= stx + 6; tx++) {
+        if (Math.hypot(tx - stx, ty - sty) >= 6) continue;
+        const ch = ensureChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK));
+        ch.trees = (ch.trees || []).filter((t) => !((t.tx | 0) === tx && (t.ty | 0) === ty));
+        ch.rocks = (ch.rocks || []).filter((t) => !((t.tx | 0) === tx && (t.ty | 0) === ty));
+        ch.ores = (ch.ores || []).filter((o) => !((o.tx | 0) === tx && (o.ty | 0) === ty));
+        ch.placed = (ch.placed || []).filter((p) => {
+          if ((p.tx | 0) === tx && (p.ty | 0) === ty) {
+            markGone("placed", tx, ty);
+            return false;
+          }
+          return true;
+        });
+        markGone("tree", tx, ty);
+        markGone("rock", tx, ty);
+        markGone("ore", tx, ty);
+      }
+    }
+  }
+  function applySpawnPoint(src, movePlayer) {
+    const sp = spawnPixel(src);
+    if (!sp) return;
+    state.spawn = sp;
+    if (movePlayer && state.player) {
+      state.player.x = sp.x;
+      state.player.y = sp.y;
+      state.cam.x = sp.x;
+      state.cam.y = sp.y;
+    }
+    clearSpawnArea();
+  }
+
   function hurtPlayer(amount) {
     const p = state.player;
     if (state.dead) return true;
+    if (inSpawnGuard()) return false;
+    state.hurtFlash = 0.42;
     const dmg = state.room && state.room.hardcore ? amount * 2 : amount;
     p.hp -= dmg;
     spawnFloat(p.x, p.y - 18, "-" + dmg, "#ffb0a8");
@@ -2928,7 +3178,7 @@ input, select {
       const n = Math.max(1, Number(parts[2]) || 1);
       if (!ITEM[id]) return showMsg("Item inválido.");
       addItem(id, n);
-    } else if (c === "spawn") {
+    } else if (c === "spawn" && !state.online) {
       const e = makeEnemy(state.player.x + 40, state.player.y, 3);
       if (parts[1]) e.kind = parts[1];
       if (state.dim) state.dim.enemies.push(e);
@@ -3092,6 +3342,10 @@ input, select {
     if (k === "z") tryAttack();
     if (k === "x") tryInteract();
     if (k === "q") dropSelected();
+    if (k === "enter" && state.online && $("mp-in") && document.activeElement !== $("mp-in")) {
+      $("mp-in").focus();
+      return;
+    }
     if (k === "escape") $("pause").classList.toggle("hidden");
     if (k >= "1" && k <= "4") useHotSlot(Number(k) - 1);
   });
@@ -3168,8 +3422,10 @@ input, select {
     if ($("inventory").classList.contains("hidden") === false) return;
     if (!$("chest").classList.contains("hidden") || !$("furnace").classList.contains("hidden")) return;
     const now = performance.now();
+    const p = state.player;
+    if (!p) return;
     const hold = selectedSlot();
-    if (hold && PLACEABLE.has(hold.id)) {
+    if (hold && PLACEABLE.has(hold.id) && !inSpawnGuard()) {
       tryPlace();
       return;
     }
@@ -3182,7 +3438,8 @@ input, select {
     if (now < state.attackT) return;
     state.attackT = now + w.rate;
     state.slash = 0.18;
-    const p = state.player;
+    windBurst(p.x, p.y, p.dirx, p.diry);
+    mpHitCheck();
     const reach = 38;
     const ax = p.x + p.dirx * reach;
     const ay = p.y + p.diry * reach;
@@ -3195,6 +3452,7 @@ input, select {
         ch.trees = ch.trees.filter((t) => t !== tree);
         dropOrGive("madeira", 1, tree.tx, tree.ty);
       }
+      shareEdit({ kind: "tree", tx: tree.tx, ty: tree.ty, hp: tree.hp });
     }
 
     for (const { tx, ty } of tilesInFront()) {
@@ -3211,7 +3469,8 @@ input, select {
           }
           if (pl.items) pl.items.forEach((s) => { if (s) dropOrGive(s.id, s.n, tx, ty); });
           dropOrGive(pl.id, 1, tx, ty);
-        }
+          shareEdit({ kind: "unplace", tx, ty });
+        } else shareEdit({ kind: "place", tx, ty, id: pl.id, hp: pl.hp, items: pl.items || null });
         break;
       }
       const tree = treeAt(tx, ty);
@@ -3237,6 +3496,7 @@ input, select {
           }
           dropOrGive(ore.id, 1, tx, ty);
         } else spawnFloat(ax, ay, "tink", "#ffe08a");
+        shareEdit({ kind: "ore", tx, ty, hp: ore.hp, id: ore.id });
         break;
       }
       const rock = rockAt(tx, ty);
@@ -3252,6 +3512,7 @@ input, select {
           dropOrGive("pedra", 1, tx, ty);
           if (Math.random() < 0.28) dropOrGive("carvao", 1, tx, ty);
         }
+        shareEdit({ kind: "rock", tx, ty, hp: rock.hp });
         break;
       }
     }
@@ -3281,6 +3542,7 @@ input, select {
           if (a.kind === "vaca") addItem("carne_crua", 2);
           else addItem("la", 2);
         }
+        shareEdit({ kind: "animal", aid: a.id, hp: a.hp, ax: a.x, ay: a.y, akind: a.kind });
       }
     }
 
@@ -3317,6 +3579,7 @@ input, select {
   function tryPlace() {
     const slot = selectedSlot();
     if (!slot || !PLACEABLE.has(slot.id)) return;
+    if (inSpawnGuard()) return showMsg("Spawn protegido: não coloca bloco aqui.");
     const now = performance.now();
     if (now < state.placeT) return;
     state.placeT = now + 280;
@@ -3341,6 +3604,7 @@ input, select {
     takeFromSlot(state.player.hot, state.hotSel, 1);
     renderHotbar();
     showMsg("Colocou " + def.name);
+    shareEdit({ kind: "place", tx, ty, id: placed.id, hp: placed.hp, items: placed.items || null });
   }
 
   function tryInteract() {
@@ -3543,6 +3807,20 @@ input, select {
     return out;
   }
 
+  function windBurst(x, y, dx, dy) {
+    const ang = Math.atan2(dy, dx);
+    for (let i = 0; i < 14; i++) {
+      const a = ang + (Math.random() - 0.5) * 0.7;
+      const spd = 90 + Math.random() * 140;
+      state.particles.push({
+        x: x + dx * 10, y: y + dy * 10,
+        vx: Math.cos(a) * spd, vy: Math.sin(a) * spd,
+        t: 0.28 + Math.random() * 0.18,
+        color: "rgba(230,245,255,0.85)",
+        wind: true, ang: a,
+      });
+    }
+  }
   function burst(x, y, color) {
     for (let i = 0; i < 8; i++) {
       const a = Math.random() * Math.PI * 2;
@@ -3651,6 +3929,7 @@ input, select {
     let nx = p.x + ix * spd * dt;
     let ny = p.y + iy * spd * dt;
     if (!worldBlocked(nx, p.y, 12, boatOpt)) p.x = nx;
+    if (state.online && state.spawn && Math.hypot(p.x - state.spawn.x, p.y - state.spawn.y) > 28) state.leftSpawn = true;
     if (!worldBlocked(p.x, ny, 12, boatOpt)) p.y = ny;
     const toTx = Math.floor(p.x / TILE), toTy = Math.floor(p.y / TILE);
     if (fromBoat && (toTx !== fromTx || toTy !== fromTy) && tileAt(toTx, toTy) === TILES.WATER && !onBoatTile(toTx, toTy)) {
@@ -3676,14 +3955,18 @@ input, select {
       d.vx *= 0.86;
       d.vy *= 0.86;
       if (d.t > 0.25 && Math.hypot(d.x - p.x, d.y - p.y) < 22) {
-        const got = addItem(d.stack.id, d.stack.n);
-        if (d.stack.tx != null) {
-          for (const s of slotsOf(p)) {
-            if (s && s.id === d.stack.id && s.tx == null) { s.tx = d.stack.tx; s.ty = d.stack.ty; break; }
+        if (state.online) {
+          if (!d.taking) { d.taking = true; mpSend({ type: "take", did: d.did }); }
+        } else {
+          const got = addItem(d.stack.id, d.stack.n);
+          if (d.stack.tx != null) {
+            for (const s of slotsOf(p)) {
+              if (s && s.id === d.stack.id && s.tx == null) { s.tx = d.stack.tx; s.ty = d.stack.ty; break; }
+            }
           }
+          if (got >= d.stack.n) state.drops.splice(i, 1);
+          else d.stack.n -= got;
         }
-        if (got >= d.stack.n) state.drops.splice(i, 1);
-        else d.stack.n -= got;
       }
     }
 
@@ -3804,10 +4087,13 @@ input, select {
       a.hurt = Math.max(0, a.hurt - dt);
       a.wait -= dt;
       if (a.wait <= 0) {
-        const ang = Math.random() * Math.PI * 2;
-        a.wx = a.x + Math.cos(ang) * (40 + Math.random() * 70);
-        a.wy = a.y + Math.sin(ang) * (40 + Math.random() * 70);
-        a.wait = 1.6 + Math.random() * 2.5;
+        const sid = state.room ? state.room.seed : 1;
+        const step = Math.floor((state.time || 0) / 8 + (a.id || "").length);
+        const ang = hash2(Math.floor(a.x), Math.floor(a.y), sid + step) * Math.PI * 2;
+        const dist = 40 + hash2(step, sid, 3) * 70;
+        a.wx = a.x + Math.cos(ang) * dist;
+        a.wy = a.y + Math.sin(ang) * dist;
+        a.wait = 1.6 + hash2(step, sid, 9) * 2.5;
       }
       const adx = a.wx - a.x, ady = a.wy - a.y;
       const al = Math.hypot(adx, ady) || 1;
@@ -3865,6 +4151,7 @@ input, select {
       }
     }
 
+    if (state.hurtFlash) state.hurtFlash = Math.max(0, state.hurtFlash - dt);
     for (const q of state.particles) {
       q.t -= dt; q.x += q.vx * dt; q.y += q.vy * dt;
     }
@@ -3981,6 +4268,19 @@ input, select {
       }
     }
 
+    if (state.online && state.spawn) {
+      const ss = worldToScreen(state.spawn.x, state.spawn.y);
+      ctx.beginPath();
+      ctx.arc(ss.x, ss.y, 6 * TILE, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(70,150,255,0.16)";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(120,190,255,0.9)";
+      ctx.lineWidth = 3;
+      ctx.setLineDash([8, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
     // player
     const p = state.player;
     const ps = worldToScreen(p.x, p.y);
@@ -3999,6 +4299,24 @@ input, select {
     ctx.moveTo(ps.x, ps.y);
     ctx.lineTo(ps.x + p.dirx * 18, ps.y + p.diry * 18);
     ctx.stroke();
+    if (state.peers) {
+      Object.values(state.peers).forEach((o) => {
+        if (o.x == null) return;
+        const os = worldToScreen(o.x, o.y);
+        ctx.fillStyle = "rgba(0,0,0,0.28)";
+        ctx.beginPath(); ctx.ellipse(os.x, os.y + 12, 10, 5, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = "#7ec8c0";
+        ctx.beginPath(); ctx.arc(os.x, os.y, 12, 0, 7); ctx.fill();
+        ctx.fillStyle = "#1b403c";
+        ctx.beginPath(); ctx.arc(os.x, os.y + 4, 11, 0.15, Math.PI - 0.15); ctx.fill();
+        ctx.fillStyle = "#fff";
+        ctx.font = "bold 12px Nunito";
+        ctx.textAlign = "center";
+        ctx.fillText(o.name || "?", os.x, os.y - 18);
+        ctx.fillStyle = "#400"; ctx.fillRect(os.x - 14, os.y + 16, 28, 4);
+        ctx.fillStyle = "#d44"; ctx.fillRect(os.x - 14, os.y + 16, 28 * ((o.hp || 20) / 20), 4);
+      });
+    }
     if (state.slash > 0) {
       ctx.strokeStyle = "rgba(255,255,255,0.75)";
       ctx.lineWidth = 3;
@@ -4012,7 +4330,15 @@ input, select {
       const s = worldToScreen(q.x, q.y);
       ctx.globalAlpha = Math.max(0, q.t * 3);
       ctx.fillStyle = q.color;
-      ctx.fillRect(s.x, s.y, 3, 3);
+      if (q.wind) {
+        ctx.save();
+        ctx.translate(s.x, s.y);
+        ctx.rotate(q.ang || 0);
+        ctx.fillRect(0, -1.2, 16, 2.4);
+        ctx.restore();
+      } else {
+        ctx.fillRect(s.x, s.y, 3, 3);
+      }
       ctx.globalAlpha = 1;
     }
     ctx.font = "bold 13px Nunito";
@@ -4037,6 +4363,15 @@ input, select {
         ctx.fillStyle = g;
         ctx.beginPath(); ctx.arc(s.x, s.y, 130, 0, 7); ctx.fill();
       }
+    }
+
+    if (state.hurtFlash > 0) {
+      const a = Math.min(0.38, state.hurtFlash * 0.9);
+      const hg = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.22, W / 2, H / 2, Math.max(W, H) * 0.72);
+      hg.addColorStop(0, "rgba(180,20,20,0)");
+      hg.addColorStop(1, "rgba(140,8,8," + a.toFixed(3) + ")");
+      ctx.fillStyle = hg;
+      ctx.fillRect(0, 0, W, H);
     }
 
     if (state.drops) {
@@ -4200,10 +4535,243 @@ input, select {
     const dt = Math.min(0.033, (ts - state.lastT) / 1000 || 0.016);
     state.lastT = ts;
     update(dt);
+    mpTick();
     draw();
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
+
+  // ---------- Multiplayer ----------
+  const net = {
+    ws: null, token: localStorage.getItem("dl_token"),
+    name: localStorage.getItem("dl_name"),
+    host: localStorage.getItem("dl_host") || "",
+    pending: null, lastPos: 0,
+  };
+  state.peers = state.peers || {};
+  state.online = false;
+
+  function mpApiBase() {
+    const host = ($("mp-host") && $("mp-host").value.trim()) || net.host || "localhost:8787";
+    net.host = host.replace(/^https?:\/\//, "");
+    localStorage.setItem("dl_host", net.host);
+    const proto = location.protocol === "https:" ? "https://" : "http://";
+    return proto + net.host;
+  }
+  function mpSay(text, sys) {
+    const log = $("mp-log");
+    if (!log) { showMsg(text); return; }
+    const d = document.createElement("div");
+    if (sys) d.className = "sys";
+    d.textContent = text;
+    log.appendChild(d);
+    log.scrollTop = 9999;
+  }
+  async function mpAuth(reg) {
+    const user = $("mp-user").value.trim();
+    const pass = $("mp-pass").value;
+    const r = await fetch(mpApiBase() + (reg ? "/api/register" : "/api/login"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user, pass }),
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "falhou");
+    net.token = j.token; net.name = j.name;
+    localStorage.setItem("dl_token", j.token);
+    localStorage.setItem("dl_name", j.name);
+    $("mp-status").textContent = "Olá, " + j.name;
+    mpRefresh();
+  }
+  async function mpRefresh() {
+    const box = $("mp-slots");
+    if (!box) return;
+    try {
+      const r = await fetch(mpApiBase() + "/api/rooms");
+      const j = await r.json();
+      const rooms = j.rooms || [];
+      box.innerHTML = [1,2,3,4,5].map((n) => {
+        const s = rooms.find((x) => String(x.key) === String(n)) || { key: n, name: "Sala " + n, empty: true, online: 0 };
+        const extra = s.empty ? "vazia · primeiro define a seed" : ("seed " + s.seed + " · " + (s.online||0) + " online");
+        return `<div class="room"><div><b>${s.name}</b><div class="tiny">${extra}${s.rotating?" · reset 1h":""}</div></div>
+          <button type="button" data-slot="${s.key}">Entrar</button></div>`;
+      }).join("");
+      box.querySelectorAll("[data-slot]").forEach((b) => {
+        b.onclick = () => mpJoin(b.dataset.slot);
+      });
+    } catch (e) {
+      box.innerHTML = "<p class='tiny'>Servidor offline. Suba o node na porta 8787.</p>";
+    }
+  }
+  function mpJoin(key) {
+    if (!net.token) return showMsg("Entre na conta.");
+    const rooms = document.querySelectorAll("#mp-slots .tiny");
+    let seed = "";
+    const card = [...document.querySelectorAll("#mp-slots .room")].find((el) => el.querySelector("[data-slot='" + key + "']"));
+    if (card && /vazia/.test(card.textContent)) seed = prompt("Sala vazia. Seed (vazio = aleatória)") || "";
+    net.pending = { key, seed };
+    const host = net.host || "localhost:8787";
+    const wsProto = (location.protocol === "https:" ? "wss://" : "ws://");
+    if (net.ws) try { net.ws.close(); } catch {}
+    net.ws = new WebSocket(wsProto + host + "/ws");
+    net.ws.onopen = () => net.ws.send(JSON.stringify({ type: "auth", token: net.token }));
+    net.ws.onmessage = (ev) => mpOn(JSON.parse(ev.data));
+    net.ws.onclose = () => {
+      if (state.online) mpSay("Caiu do servidor.", true);
+    };
+  }
+  function mpOn(m) {
+    if (m.type === "error") { showMsg(m.msg); if ($("mp-status")) $("mp-status").textContent = m.msg; return; }
+    if (m.type === "authed" && net.pending) {
+      const p = net.pending; net.pending = null;
+      net.ws.send(JSON.stringify({ type: "join", key: p.key, seed: p.seed }));
+    }
+    if (m.type === "joined") {
+      startOnlineWorld(m);
+    }
+    if (m.type === "joinedPeer" && m.player) state.peers[m.player.name] = m.player;
+    if (m.type === "left") delete state.peers[m.name];
+    if (m.type === "pos" && m.name && m.name !== net.name) {
+      state.peers[m.name] = Object.assign(state.peers[m.name] || {}, m);
+    }
+    if (m.type === "chat") mpSay((m.from || "?") + ": " + m.text, m.sys);
+    if (m.type === "sys") mpSay(m.text, true);
+    if (m.type === "death") { mpSay(m.name + " caiu (" + m.by + ")", true); showMsg(m.name + " caiu"); }
+    if (m.type === "hurt") {
+      if (state.player) {
+        state.player.hp = m.hp;
+        state.hurtFlash = 0.42;
+        spawnFloat(state.player.x, state.player.y - 16, "-" + m.dmg, "#ff8a7a");
+        updateHud();
+      }
+    }
+    if (m.type === "respawn" && state.player) {
+      state.player.x = m.x; state.player.y = m.y; state.player.hp = m.hp;
+      state.cam.x = m.x; state.cam.y = m.y;
+      showMsg("Você caiu e voltou ao centro.");
+    }
+    if (m.type === "tp" && state.player) { state.player.x = m.x; state.player.y = m.y; }
+    if (m.type === "adm") {
+      state.mpAdmin = !!m.on;
+      showMsg(m.on ? "Modo admin ON" : "Modo admin OFF");
+    }
+    if (m.type === "kicked") {
+      showMsg("Expulso: " + m.reason);
+      state.online = false;
+      backToMenu();
+    }
+    if (m.type === "edit") {
+      state.netEdits = state.netEdits || [];
+      state.netEdits.push(m);
+      applyWorldEdit(m, true);
+    }
+    if (m.type === "spawnPoint") applySpawnPoint(m, true);
+    if (m.type === "drop" && m.did && !(state.drops || []).some((d) => d.did === m.did)) {
+      dropItem(m.id, m.n, m.x, m.y, false, m);
+    }
+    if (m.type === "taken" || m.type === "takeDenied") {
+      state.drops = (state.drops || []).filter((d) => d.did !== m.did);
+    }
+    if (m.type === "loot") {
+      addItem(m.id, m.n);
+      state.drops = (state.drops || []).filter((d) => d.did !== m.did);
+      updateHud();
+    }
+    if (m.type === "animals" && Array.isArray(m.list)) {
+      m.list.forEach((s) => {
+        const a = allAnimals().find((x) => x.id === s.id);
+        if (a) { a.x = s.x; a.y = s.y; a.hp = s.hp; a.alive = s.alive !== false; }
+      });
+    }
+  }
+  function startOnlineWorld(m) {
+    const seed = (m.room && m.room.seed) || (m.map && m.map.seed) || 1;
+    const land = findLandNear(seed, 0, 0, 90);
+    const spawn = spawnPixel(m.map && m.map.spawn) || { x: land.x * TILE + TILE / 2, y: land.y * TILE + TILE / 2 };
+    state.online = true;
+    state.peers = {};
+    (m.players || []).forEach((p) => { if (p.name !== net.name) state.peers[p.name] = p; });
+    state.room = {
+      id: "online-" + m.room.key,
+      name: m.room.name,
+      type: "public",
+      seed,
+      hardcore: false,
+      cheats: !!m.admin,
+      online: true,
+      slot: m.room.key,
+    };
+    setupLandmarks(seed);
+    state.dungeonKnown = false;
+    state.time = (m.map && m.map.time) || 20;
+    state.nightMobs = [];
+    state.wasNight = false;
+    state.chunks = new Map();
+    state.visited = new Set();
+    state.gone = { tree: {}, rock: {}, ore: {}, placed: {} };
+    state.netEdits = (m.map && m.map.edits) || [];
+    state.spawn = spawn;
+    state.player = makePlayer({ x: (spawn.x - TILE / 2) / TILE, y: (spawn.y - TILE / 2) / TILE });
+    state.player.x = spawn.x;
+    state.player.y = spawn.y;
+    state.cam.x = spawn.x;
+    state.cam.y = spawn.y;
+    markVisitedFromPlayer();
+    for (const e of state.netEdits) applyWorldEdit(e, true);
+    clearSpawnArea();
+    state.leftSpawn = false;
+    state.noPvp = !!m.noPvp;
+    state.drops = [];
+    if (m.map && m.map.drops) {
+      Object.values(m.map.drops).forEach((d) => dropItem(d.id, d.n, d.x, d.y, false, d));
+    }
+    mpSend({ type: "helloSpawn", x: state.spawn.x, y: state.spawn.y });
+    showLoading(() => {
+      enterGame();
+      if ($("mp-chat")) $("mp-chat").classList.remove("hidden");
+      mpSay("Sala " + m.room.key + " · seed " + seed, true);
+      if (m.admin) mpSay("Você é o admin. /tp /ban /kick /players /adm", true);
+      showMsg("Online: " + m.room.name);
+    });
+  }
+  function mpSend(obj) {
+    if (net.ws && net.ws.readyState === 1) net.ws.send(JSON.stringify(obj));
+  }
+  function mpTick() {
+    if (!state.online || !state.player) return;
+    const t = performance.now();
+    if (t - net.lastPos < 50) return;
+    net.lastPos = t;
+    const p = state.player;
+    mpSend({ type: "pos", x: p.x, y: p.y, dirx: p.dirx, diry: p.diry });
+  }
+  function mpHitCheck() {
+    if (!state.online || !state.player) return;
+    const p = state.player;
+    const w = equippedWeapon();
+    if (state.noPvp) return;
+    if (inSpawnGuard()) return;
+    Object.keys(state.peers).forEach((name) => {
+      const o = state.peers[name];
+      if (state.spawn && Math.hypot((o.x||0) - state.spawn.x, (o.y||0) - state.spawn.y) < 6 * TILE) return;
+      const dx = o.x - p.x, dy = o.y - p.y;
+      const dist = Math.hypot(dx, dy);
+      const align = dx * p.dirx + dy * p.diry;
+      if (dist < 46 && align > 8) mpSend({ type: "hit", name, dmg: w.dmg || 4 });
+    });
+  }
+  if ($("mp-login")) $("mp-login").onclick = () => mpAuth(false).catch((e) => { $("mp-status").textContent = e.message; });
+  if ($("mp-reg")) $("mp-reg").onclick = () => mpAuth(true).catch((e) => { $("mp-status").textContent = e.message; });
+  if ($("mp-in")) {
+    $("mp-in").addEventListener("keydown", (e) => {
+      e.stopPropagation();
+      if (e.key === "Enter") {
+        const text = $("mp-in").value.trim();
+        $("mp-in").value = "";
+        if (text) mpSend({ type: "chat", text });
+      }
+    });
+  }
 
   // autosave
   setInterval(() => {
