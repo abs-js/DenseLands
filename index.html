@@ -807,7 +807,6 @@ input, select {
           <button class="big-btn ghost" id="btn-load" type="button" data-i18n="menu.load">Carregar sala</button>
           <button class="big-btn ghost" id="btn-import" type="button" data-i18n="menu.import">Importar mapa</button>
           <input id="import-file" type="file" accept="application/json" hidden />
-          <p class="tiny" data-i18n="menu.offline">Por enquanto o jogo é offline. Salas usam o armazenamento local deste dispositivo. Você pode exportar o mapa de dentro do jogo.</p>
         </div>
 
         <form id="form-create" class="hidden">
@@ -862,8 +861,8 @@ input, select {
         </div>
 
         <div id="menu-online" class="hidden">
-          <label>Servidor
-            <input id="mp-host" placeholder="localhost:8787" />
+          <label>Servidor(não sabe não mexe, se estiver vazio escreve exatamente isso)
+            <input id="mp-host" placeholder="denselandsbackend.onrender.com" />
           </label>
           <label>Usuário <input id="mp-user" maxlength="16" /></label>
           <label>Senha <input id="mp-pass" type="password" /></label>
