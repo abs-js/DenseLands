@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DenseLands Wiki</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ink: #1b1a17;
+      --muted: #5c564c;
+      --line: #c9bfa8;
+      --paper: #f7f1e4;
+      --card: #fffdf7;
+      --link: #1b5c3a;
+      --link2: #0e3d26;
+      --box: #efe6d2;
+      --accent: #2f6b3a;
+      --warn: #8a4b16;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #e8dfc8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M0 79h80M79 0v80' stroke='%23d9cfb6' stroke-width='1' fill='none'/%3E%3C/svg%3E");
+      color: var(--ink);
+      font: 16px/1.55 "Source Sans 3", sans-serif;
+    }
+    header {
+      background: #1d2a1d;
+      color: #f3ead4;
+      border-bottom: 6px solid #6b4423;
+      padding: 18px 24px 16px;
+    }
+    header .brand { font-size: 13px; letter-spacing: .16em; text-transform: uppercase; opacity: .7; }
+    header h1 { margin: 4px 0 0; font-family: "Source Serif 4", serif; font-size: 34px; }
+    header p { margin: 6px 0 0; opacity: .82; }
+    .wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+      display: grid;
+      grid-template-columns: 230px 1fr;
+      gap: 22px;
+    }
+    nav {
+      position: sticky;
+      top: 12px;
+      align-self: start;
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 12px;
+    }
+    nav h2 { font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    nav a { display: block; color: var(--link); text-decoration: none; padding: 4px 0; font-size: 14px; }
+    nav a:hover { text-decoration: underline; }
+    article {
+      background: var(--card);
+      border: 1px solid var(--line);
+      padding: 22px 26px 40px;
+    }
+    h2, h3, h4 { font-family: "Source Serif 4", serif; }
+    h2 { border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-top: 34px; }
+    h3 { margin-top: 22px; color: #2c2418; }
+    a { color: var(--link); }
+    .lede { font-size: 18px; }
+    .infobox {
+      float: right;
+      width: 280px;
+      margin: 0 0 16px 18px;
+      background: var(--box);
+      border: 1px solid var(--line);
+      font-size: 14px;
+    }
+    .infobox h3 {
+      margin: 0;
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 10px;
+      font-size: 16px;
+    }
+    .infobox table { width: 100%; border-collapse: collapse; }
+    .infobox th, .infobox td { padding: 6px 8px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
+    .infobox th { width: 42%; color: var(--muted); font-weight: 600; }
+    .toc {
+      display: table;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      padding: 10px 16px;
+      margin: 16px 0 20px;
+      font-size: 14px;
+    }
+    .toc b { display: block; margin-bottom: 4px; }
+    table.data { width: 100%; border-collapse: collapse; font-size: 14.5px; margin: 10px 0 18px; }
+    table.data th, table.data td { border: 1px solid var(--line); padding: 7px 8px; text-align: left; }
+    table.data th { background: #efe6d2; }
+    table.data tr:nth-child(even) td { background: #fbf7ee; }
+    .note, .tip, .warn {
+      border-left: 4px solid var(--accent);
+      background: #f3eee0;
+      padding: 10px 12px;
+      margin: 12px 0;
+    }
+    .warn { border-color: var(--warn); background: #f7ecdc; }
+    .tip { border-color: #2a6f8a; background: #eef3ea; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .card {
+      border: 1px solid var(--line);
+      background: var(--paper);
+      padding: 10px 12px;
+    }
+    .card h4 { margin: 0 0 6px; }
+    footer { clear: both; color: var(--muted); font-size: 13px; margin-top: 36px; }
+    @media (max-width: 860px) {
+      .wrap { grid-template-columns: 1fr; }
+      nav { position: static; }
+      .infobox { float: none; width: auto; margin: 0 0 16px; }
+      .grid2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Enciclopédia da semente</div>
+    <h1>DenseLands Wiki</h1>
+    <p>Guia do mundo gerado por seed — como jogar, o que existe e como sair de cada aperto.</p>
+  </header>
+  <div class="wrap">
+    <nav>
+      <h2>Sumário</h2>
+      <a href="#sobre">Sobre o jogo</a>
+      <a href="#curiosidades">Curiosidades</a>
+      <a href="#como">Como jogar</a>
+      <a href="#controles">Controles</a>
+      <a href="#casos">Resolver casos</a>
+      <a href="#mundo">O mundo</a>
+      <a href="#estruturas">Estruturas</a>
+      <a href="#npcs">Aldeões</a>
+      <a href="#mobs">Criaturas</a>
+      <a href="#itens">Itens</a>
+      <a href="#craft">Criação</a>
+      <a href="#combate">Combate e ferramentas</a>
+      <a href="#dungeons">Masmorras e minas</a>
+      <a href="#modos">Modos e comandos</a>
+      <a href="#seeds">Seeds prontas</a>
+    </nav>
+    <article>
+      <div class="infobox">
+        <h3>DenseLands</h3>
+        <table>
+          <tr><th>Tipo</th><td>RPG de mundo aberto offline</td></tr>
+          <tr><th>Geração</th><td>Seed, chunks 16×16</td></tr>
+          <tr><th>Salvamento</th><td>Só o que você já pisou</td></tr>
+          <tr><th>Inventário</th><td>4 saco + 4 atalho, pilhas de 32</td></tr>
+          <tr><th>Dia / noite</th><td>5 min + 5 min</td></tr>
+          <tr><th>Idiomas</th><td>pt-BR, en-US, español</td></tr>
+          <tr><th>Arquivo</th><td>DenseLands.html</td></tr>
+        </table>
+      </div>
+
+      <p class="lede"><b>DenseLands</b> é um RPG de cima para baixo gerado por uma <i>seed</i>, no estilo de um caderno de aventura. Você acorda no meio do nada, corta madeira, acha (ou não) uma vila, assa comida, ilumina a noite e entra em portas que abrem outras dimensões.</p>
+
+      <div class="toc">
+        <b>Nesta página</b>
+        1. Sobre · 2. Curiosidades · 3. Como jogar · 4. Casos · 5. Mundo · 6. Coisas
+      </div>
+
+      <h2 id="sobre">Sobre o jogo</h2>
+      <p>O mundo não vem pronto inteiro. Ele nasce de um número (a seed) e de um gerador de ruído. Cada pedaço de 16 por 16 blocos só é guardado se você já andou nele. O resto pode ser recriado depois, sempre igual, porque a seed não muda.</p>
+      <p>Não é um MMO de verdade: as “salas” ficam no aparelho (públicas ou com senha). Dá para exportar o mapa em arquivo e importar em outro lugar.</p>
+
+      <h2 id="curiosidades">Curiosidades</h2>
+      <ul>
+        <li>O nome antigo era <i>Terras da Semente</i>. Virou DenseLands na versão atual.</li>
+        <li>Havia uma <b>mesa</b> e uma <b>bancada</b> ao mesmo tempo. A mesa saiu porque só confundia: hoje a bancada de 2 madeiras faz o craft grande.</li>
+        <li>Vilas não nascem coladas no spawn. O gerador empurra a primeira vila para uns 58 a 110 blocos — por isso “vila perto” nas seeds prontas ainda é uma caminhada curta, não um tapete na porta.</li>
+        <li>Mapas <b>não empilham</b>. Cada um lembra um lugar e, ao usar, desenha uma seta na tela.</li>
+        <li>Tocha afasta monstro. Vila e masmorra já nascem com algumas acesas.</li>
+        <li>Deck de madeira na água vira ponte. Se muitos mobs pisam em cima, o bloco pode quebrar e cair de volta no chão.</li>
+        <li>A seed <b>2054</b> já foi medida como um mundo “redondo”: terra no spawn, vila, portal e um pouco de água por perto.</li>
+        <li>Masmorra e mina não são o mapa de cima. A porta 3×3 abre uma <i>dimensão</i> cuja seed mistura mundo + X + Y da porta.</li>
+        <li>Cheats só existem se você marcar na criação. Depois é só apertar <code>/</code>.</li>
+      </ul>
+
+      <h2 id="como">Como jogar</h2>
+      <h3>Primeiros minutos</h3>
+      <ol>
+        <li>Crie uma sala (ou pegue uma seed pronta).</li>
+        <li>Quebre árvores. Madeira cai no chão na sua direção — passe por cima.</li>
+        <li>Faça uma <b>bancada</b> (2 madeiras) e coloque no chão com Z.</li>
+        <li>Faça ferramentas. Machado corta árvore mais rápido; picareta quebra pedra e minério.</li>
+        <li>Ande até achar vila, casa abandonada, filão, navio, mina ou porta de masmorra.</li>
+        <li>Antes da noite: tocha, cama ou parede. Sem luz, a tela escurece e nascem criaturas.</li>
+      </ol>
+
+      <h3 id="controles">Controles</h3>
+      <table class="data">
+        <tr><th></th><th>Computador</th><th>Celular</th></tr>
+        <tr><td>Andar</td><td>Setas</td><td>Joystick esquerdo</td></tr>
+        <tr><td>Atacar / colocar</td><td>Z</td><td>A</td></tr>
+        <tr><td>Usar / falar</td><td>X</td><td>B</td></tr>
+        <tr><td>Mochila</td><td>C</td><td>Botão I</td></tr>
+        <tr><td>Atalho</td><td>1 a 4</td><td>Toque na barra</td></tr>
+        <tr><td>Soltar item</td><td>Q</td><td>Arrastar para fora da mochila</td></tr>
+        <tr><td>Pausa</td><td>Esc</td><td>☰</td></tr>
+        <tr><td>Comando</td><td>/ (se cheats)</td><td>—</td></tr>
+      </table>
+      <p class="tip">Ataque: olhe para o lado certo, pare e aperte Z. Arco gasta flecha. Vara de pesca só funciona apontando para água e esperando.</p>
+
+      <h2 id="casos">Como resolver casos</h2>
+      <div class="grid2">
+        <div class="card">
+          <h4>Estou sem comida</h4>
+          <p>Carne crua e peixe cru <b>não se comem</b>. Precisa de forno + madeira ou carvão. Pão a padeira vende. Vaca dá carne; vara + linha pesca peixe.</p>
+        </div>
+        <div class="card">
+          <h4>A fome zera</h4>
+          <p>A barra cai sozinha. Em zero você perde vida. Durma numa cama para recuperar um pouco. Assado enche mais que pão.</p>
+        </div>
+        <div class="card">
+          <h4>Estou me afogando</h4>
+          <p>Na água a barra de ar cai. Em terra sobe devagar. Bote ou bloco de madeira na água param o afogo. Hardcore <b>não nada</b>.</p>
+        </div>
+        <div class="card">
+          <h4>Noite escura demais</h4>
+          <p>Coloque tochas (madeira + carvão). Elas iluminam e empurram monstro. Vila é zona mais segura.</p>
+        </div>
+        <div class="card">
+          <h4>Não acho a vila</h4>
+          <p>Vilas são raras e longe. Use seed 942, o comando <code>/struct</code> (com cheats) ou compre mapa se achar uma cartógrafa.</p>
+        </div>
+        <div class="card">
+          <h4>Saco cheio</h4>
+          <p>Só 8 tipos de coisa (4+4), 32 por pilha. Mapas e armas não juntam. Faça um baú. Q joga no chão.</p>
+        </div>
+        <div class="card">
+          <h4>Inimigo atravessa?</h4>
+          <p>No mundo de cima, árvore, pedra, minério e bloco sólido bloqueiam. Dentro da masmorra a parede é tile de muro. Ataque parado, na frente do alvo.</p>
+        </div>
+        <div class="card">
+          <h4>Porta de masmorra</h4>
+          <p>O predinho 3×3 está vazio. Entre pela porta de baixo (X). Lá dentro o tipo e a dificuldade já tinham aparecido ao chegar perto.</p>
+        </div>
+        <div class="card">
+          <h4>Morri</h4>
+          <p>Tela de queda: acorde no spawn ou volte ao menu. Hardcore apaga o mundo — não há acordar.</p>
+        </div>
+        <div class="card">
+          <h4>Quero um lugar específico</h4>
+          <p>Use o mapa certo (masmorra, mina ou navio). A seta aponta. Cartógrafa vende os extras se der sorte.</p>
+        </div>
+      </div>
+
+      <h2 id="mundo">O mundo</h2>
+      <p>O chão é água, areia/praia ou grama. Ilhas aparecem no meio do mar. Árvores e pedras bloqueiam passagem. Filões de pedra pura escondem minério no meio.</p>
+      <ul>
+        <li><b>Névoa:</b> chunk que você nunca visitou fica escondida. Hardcore mostra só a chunk atual.</li>
+        <li><b>Dia:</b> 5 minutos claros, 5 escuros. Cama em casa (sua ou de NPC) pula para de manhã, cura e afasta a noite.</li>
+        <li><b>Animais:</b> vaca (carne crua) e ovelha (lã) nascem aos poucos, nunca na névoa.</li>
+      </ul>
+
+      <h2 id="estruturas">Estruturas</h2>
+      <table class="data">
+        <tr><th>Estrutura</th><th>Onde</th><th>O que tem</th></tr>
+        <tr><td>Vila</td><td>Terra, longe do spawn</td><td>Casas RNG, tochas, aldeões que andam, loja e missão</td></tr>
+        <tr><td>Casa abandonada</td><td>Campo</td><td>Cama e baú com madeira</td></tr>
+        <tr><td>Navio abandonado</td><td>Alto-mar</td><td>Baús com pedra (por enquanto)</td></tr>
+        <tr><td>Filão</td><td>Terra firme</td><td>Pedra densa e minérios no miolo</td></tr>
+        <tr><td>Porta de masmorra</td><td>3×3 no mundo</td><td>Dimensão: simples, dupla ou complexa</td></tr>
+        <tr><td>Mina abandonada</td><td>3×3 no mundo</td><td>Túneis, pedra, minério, monstros com o tempo</td></tr>
+      </table>
+
+      <h2 id="npcs">Aldeões</h2>
+      <p>O número de casas e o tipo de cada um mudam por vila. Eles caminham pelo pátio.</p>
+      <table class="data">
+        <tr><th>Ofício</th><th>O que faz</th></tr>
+        <tr><td>Mercadora</td><td>Compra madeira/pedra, vende pão</td></tr>
+        <tr><td>Lenhador</td><td>Missão: 10 madeiras → 18 de ouro</td></tr>
+        <tr><td>Ferreiro</td><td>Lembra que a bancada libera receitas</td></tr>
+        <tr><td>Cartógrafa</td><td>Vende mapa de masmorra; às vezes mina e navio</td></tr>
+        <tr><td>Padeira</td><td>Pão por 5 ouros</td></tr>
+        <tr><td>Pescador</td><td>Vende bote</td></tr>
+        <tr><td>Pedreira</td><td>Compra pedra e vende bloco de pedra</td></tr>
+      </table>
+
+      <h2 id="mobs">Criaturas</h2>
+      <table class="data">
+        <tr><th>Nome</th><th>Jeito</th><th>Nota</th></tr>
+        <tr><td>Gosma</td><td>Verde, lenta, pouco dano</td><td>Cai ouro</td></tr>
+        <tr><td>Sombra</td><td>Roxa, mais forte</td><td>Mais ouro</td></tr>
+        <tr><td>Esqueleto</td><td>Branco, atira de longe</td><td>Pode dropar 1–3 flechas</td></tr>
+        <tr><td>Vaca</td><td>Anda no campo</td><td>Carne crua</td></tr>
+        <tr><td>Ovelha</td><td>Anda no campo</td><td>Lã</td></tr>
+      </table>
+      <p class="note">Tocha forte faz o monstro recuar. Na mina abandonada eles continuam nascendo enquanto você fica lá dentro.</p>
+
+      <h2 id="itens">Itens</h2>
+      <h3>Recursos</h3>
+      <p>Madeira, pedra, carvão, lã, linha, ouro, minérios brutos (ferro, cobre, ouro) e os lingotes depois do forno. Comida: pão, carne/peixe crus e assados.</p>
+      <h3>Colocáveis</h3>
+      <table class="data">
+        <tr><th>Item</th><th>Receita / uso</th></tr>
+        <tr><td>Bloco de madeira</td><td>4 madeiras. Também serve de ponte na água</td></tr>
+        <tr><td>Bloco de pedra</td><td>4 pedras. Parede firme</td></tr>
+        <tr><td>Bancada</td><td>2 madeiras. Abre o craft grande</td></tr>
+        <tr><td>Forno</td><td>8 pedras. Assa e funde</td></tr>
+        <tr><td>Baú</td><td>4 madeiras. 4 espaços extra</td></tr>
+        <tr><td>Cama</td><td>6 madeiras + 3 lã. Dorme até de manhã</td></tr>
+        <tr><td>Bote</td><td>6 madeiras. Só na água; anda com você</td></tr>
+        <tr><td>Tocha</td><td>1 madeira + 1 carvão = 4. Luz e afasta mob</td></tr>
+      </table>
+      <h3>Mapas</h3>
+      <p>Mapa da masmorra, da mina e do navio. Um não empilha no outro. Usar (atalho) liga a seta até o ponto gravado no papel.</p>
+
+      <h2 id="craft">Criação e forno</h2>
+      <p>A mochila mostra 8 espaços à esquerda e o craft à direita. Dá para filtrar: todos / craftável / falta algo, e as abas ferramentas, construção, utilitários. Arraste para trocar de lugar.</p>
+      <h3>Na mão (sem bancada)</h3>
+      <p>Porrete, ferramentas de madeira, blocos, bancada e tocha.</p>
+      <h3>Na bancada</h3>
+      <p>Bote, cama, linha, vara, arco, flecha (1 madeira + 1 pedra = 3 flechas), forno, baú, lança e as ferramentas de pedra, cobre e ferro.</p>
+      <h3>Forno</h3>
+      <p>Precisa de um item cru e de fogo (carvão preferido, senão madeira).</p>
+      <ul>
+        <li>Carne crua → carne assada (fome +8)</li>
+        <li>Peixe cru → peixe assado (fome +6)</li>
+        <li>Minério de ferro / cobre / ouro → lingote</li>
+        <li>Pão enche +5 e não precisa de forno</li>
+      </ul>
+
+      <h2 id="combate">Combate e ferramentas</h2>
+      <p>Três formas: <b>machado</b> (área, corta árvore rápido), <b>picareta</b> (pouco dano, quebra pedra/minério rápido), <b>espada</b> (melhor contra mob). Materiais: madeira → pedra → cobre → ferro. Cada uma tem dano, intervalo e durabilidade diferentes. A barra embaixo do ícone é a vida da ferramenta.</p>
+      <p>Arco precisa de flecha. Porrete é o taco simples de 5 madeiras.</p>
+
+      <h2 id="dungeons">Masmorras e minas</h2>
+      <h3>Masmorra</h3>
+      <ul>
+        <li><b>Simples:</b> sala inicial e sala do baú, poucos monstros.</li>
+        <li><b>Dupla:</b> duas ou mais saídas, labirinto curto, ouro e minério nos baús.</li>
+        <li><b>Complexa:</b> labirinto grande e cheio de inimigos.</li>
+      </ul>
+      <p>A dificuldade (fácil, média, difícil) aparece ao chegar na porta e muda vida e dano dos bichos de dentro.</p>
+      <h3>Mina</h3>
+      <p>Não é sala de baú elegante: é um formigueiro de pedra e minério. Monstros vão surgindo com o tempo. Saia pela mesma lógica da masmorra (ponto de saída).</p>
+
+      <h2 id="modos">Modos e comandos</h2>
+      <p><b>Hardcore:</b> só a chunk atual visível, toma o dobro de dano, não nada, e a morte apaga o mundo.</p>
+      <p><b>Cheats</b> (marcados na criação, depois <code>/</code>):</p>
+      <table class="data">
+        <tr><th>Comando</th><th>Efeito</th></tr>
+        <tr><td>/hp 20</td><td>Muda a vida</td></tr>
+        <tr><td>/give madeira 10</td><td>Entrega item</td></tr>
+        <tr><td>/spawn</td><td>Nasce um mob perto</td></tr>
+        <tr><td>/struct</td><td>Aponta a estrutura mais próxima</td></tr>
+        <tr><td>/time dia | noite</td><td>Muda o relógio</td></tr>
+      </table>
+
+      <h2 id="seeds">Seeds prontas</h2>
+      <p>Medidas no gerador atual (distâncias aproximadas a partir do spawn):</p>
+      <table class="data">
+        <tr><th>Nome</th><th>Seed</th><th>Por quê</th></tr>
+        <tr><td>Vila perto</td><td>942</td><td>Vila a ~42 blocos</td></tr>
+        <tr><td>Mina perto</td><td>5398</td><td>Mina a ~29 blocos</td></tr>
+        <tr><td>Navio perto</td><td>7437</td><td>Navio quase colado</td></tr>
+        <tr><td>Ilha deserta</td><td>2351</td><td>Pouca terra, muito mar</td></tr>
+        <tr><td>Dungeon perto</td><td>7089</td><td>Portal a ~36 blocos</td></tr>
+      </table>
+      <p class="warn">Seed pronta não muda as regras. No hardcore a ilha deserta ainda é dura: sem nado, sem visão longa, fome e noite iguais.</p>
+
+      <footer>
+        DenseLands Wiki · página de jogador, não oficial de editora nenhuma · o jogo vive no arquivo DenseLands.html neste mesmo pacote.
+      </footer>
+    </article>
+  </div>
+</body>
+</html>
