@@ -1,375 +1,907 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8">
   <title>DenseLands Wiki</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --ink: #1b1a17;
-      --muted: #5c564c;
-      --line: #c9bfa8;
-      --paper: #f7f1e4;
-      --card: #fffdf7;
-      --link: #1b5c3a;
-      --link2: #0e3d26;
-      --box: #efe6d2;
-      --accent: #2f6b3a;
-      --warn: #8a4b16;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      background: #e8dfc8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cpath d='M0 79h80M79 0v80' stroke='%23d9cfb6' stroke-width='1' fill='none'/%3E%3C/svg%3E");
-      color: var(--ink);
-      font: 16px/1.55 "Source Sans 3", sans-serif;
-    }
-    header {
-      background: #1d2a1d;
-      color: #f3ead4;
-      border-bottom: 6px solid #6b4423;
-      padding: 18px 24px 16px;
-    }
-    header .brand { font-size: 13px; letter-spacing: .16em; text-transform: uppercase; opacity: .7; }
-    header h1 { margin: 4px 0 0; font-family: "Source Serif 4", serif; font-size: 34px; }
-    header p { margin: 6px 0 0; opacity: .82; }
-    .wrap {
-      max-width: 1120px;
-      margin: 0 auto;
-      padding: 20px 16px 60px;
-      display: grid;
-      grid-template-columns: 230px 1fr;
-      gap: 22px;
-    }
-    nav {
-      position: sticky;
-      top: 12px;
-      align-self: start;
-      background: var(--card);
-      border: 1px solid var(--line);
-      padding: 12px;
-    }
-    nav h2 { font-size: 13px; margin: 0 0 8px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-    nav a { display: block; color: var(--link); text-decoration: none; padding: 4px 0; font-size: 14px; }
-    nav a:hover { text-decoration: underline; }
-    article {
-      background: var(--card);
-      border: 1px solid var(--line);
-      padding: 22px 26px 40px;
-    }
-    h2, h3, h4 { font-family: "Source Serif 4", serif; }
-    h2 { border-bottom: 1px solid var(--line); padding-bottom: 6px; margin-top: 34px; }
-    h3 { margin-top: 22px; color: #2c2418; }
-    a { color: var(--link); }
-    .lede { font-size: 18px; }
-    .infobox {
-      float: right;
-      width: 280px;
-      margin: 0 0 16px 18px;
-      background: var(--box);
-      border: 1px solid var(--line);
-      font-size: 14px;
-    }
-    .infobox h3 {
-      margin: 0;
-      background: var(--accent);
-      color: #fff;
-      padding: 8px 10px;
-      font-size: 16px;
-    }
-    .infobox table { width: 100%; border-collapse: collapse; }
-    .infobox th, .infobox td { padding: 6px 8px; border-top: 1px solid var(--line); text-align: left; vertical-align: top; }
-    .infobox th { width: 42%; color: var(--muted); font-weight: 600; }
-    .toc {
-      display: table;
-      background: var(--paper);
-      border: 1px solid var(--line);
-      padding: 10px 16px;
-      margin: 16px 0 20px;
-      font-size: 14px;
-    }
-    .toc b { display: block; margin-bottom: 4px; }
-    table.data { width: 100%; border-collapse: collapse; font-size: 14.5px; margin: 10px 0 18px; }
-    table.data th, table.data td { border: 1px solid var(--line); padding: 7px 8px; text-align: left; }
-    table.data th { background: #efe6d2; }
-    table.data tr:nth-child(even) td { background: #fbf7ee; }
-    .note, .tip, .warn {
-      border-left: 4px solid var(--accent);
-      background: #f3eee0;
-      padding: 10px 12px;
-      margin: 12px 0;
-    }
-    .warn { border-color: var(--warn); background: #f7ecdc; }
-    .tip { border-color: #2a6f8a; background: #eef3ea; }
-    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .card {
-      border: 1px solid var(--line);
-      background: var(--paper);
-      padding: 10px 12px;
-    }
-    .card h4 { margin: 0 0 6px; }
-    footer { clear: both; color: var(--muted); font-size: 13px; margin-top: 36px; }
-    @media (max-width: 860px) {
-      .wrap { grid-template-columns: 1fr; }
-      nav { position: static; }
-      .infobox { float: none; width: auto; margin: 0 0 16px; }
-      .grid2 { grid-template-columns: 1fr; }
-    }
-  </style>
 </head>
 <body>
-  <header>
-    <div class="brand">Enciclopédia da semente</div>
-    <h1>DenseLands Wiki</h1>
-    <p>Guia do mundo gerado por seed — como jogar, o que existe e como sair de cada aperto.</p>
-  </header>
-  <div class="wrap">
-    <nav>
-      <h2>Sumário</h2>
-      <a href="#sobre">Sobre o jogo</a>
-      <a href="#curiosidades">Curiosidades</a>
-      <a href="#como">Como jogar</a>
-      <a href="#controles">Controles</a>
-      <a href="#casos">Resolver casos</a>
-      <a href="#mundo">O mundo</a>
-      <a href="#estruturas">Estruturas</a>
-      <a href="#npcs">Aldeões</a>
-      <a href="#mobs">Criaturas</a>
-      <a href="#itens">Itens</a>
-      <a href="#craft">Criação</a>
-      <a href="#combate">Combate e ferramentas</a>
-      <a href="#dungeons">Masmorras e minas</a>
-      <a href="#modos">Modos e comandos</a>
-      <a href="#seeds">Seeds prontas</a>
-    </nav>
-    <article>
-      <div class="infobox">
-        <h3>DenseLands</h3>
-        <table>
-          <tr><th>Tipo</th><td>RPG de mundo aberto offline</td></tr>
-          <tr><th>Geração</th><td>Seed, chunks 16×16</td></tr>
-          <tr><th>Salvamento</th><td>Só o que você já pisou</td></tr>
-          <tr><th>Inventário</th><td>4 saco + 4 atalho, pilhas de 32</td></tr>
-          <tr><th>Dia / noite</th><td>5 min + 5 min</td></tr>
-          <tr><th>Idiomas</th><td>pt-BR, en-US, español</td></tr>
-          <tr><th>Arquivo</th><td>DenseLands.html</td></tr>
-        </table>
-      </div>
+<a id="topo"></a>
+<header>
+<div id="idiomas" role="navigation" aria-label="Language selection">
+  <strong>Idioma / Language / Idioma:</strong>
+  <button type="button" data-lang="pt-BR">Português</button>
+  <button type="button" data-lang="en-US">English</button>
+  <button type="button" data-lang="es">Español</button>
+  <span id="lang-status">PT-BR</span>
+</div>
+<hr>
+  <h1>DenseLands Wiki</h1>
+  <p><strong>RPG de mundo aberto · seed · offline</strong></p>
+  <p data-pt="Documentação técnica e de gameplay baseada na implementação atual do jogo." data-i18n-static="1">Documentação técnica e de gameplay baseada na implementação atual do jogo.</p>
+  <hr>
+</header>
 
-      <p class="lede"><b>DenseLands</b> é um RPG de cima para baixo gerado por uma <i>seed</i>, no estilo de um caderno de aventura. Você acorda no meio do nada, corta madeira, acha (ou não) uma vila, assa comida, ilumina a noite e entra em portas que abrem outras dimensões.</p>
+<nav aria-label="Índice">
+  <h2>Índice</h2>
+  <ol>
+    <li><a href="#sobre">Sobre DenseLands</a></li>
+    <li><a href="#objetivo">Objetivo e loop de jogo</a></li>
+    <li><a href="#controles">Controles</a></li>
+    <li><a href="#mundo">Mundo e geração procedural</a></li>
+    <li><a href="#seeds">Seeds e determinismo</a></li>
+    <li><a href="#estruturas">Estruturas e pontos de interesse</a></li>
+    <li><a href="#chunks">Chunks e carregamento do mundo</a></li>
+    <li><a href="#tempo">Tempo, dia e noite</a></li>
+    <li><a href="#jogador">Jogador: vida, fome e ar</a></li>
+    <li><a href="#combate">Combate</a></li>
+    <li><a href="#inimigos">Inimigos</a></li>
+    <li><a href="#animais">Animais</a></li>
+    <li><a href="#recursos">Recursos</a></li>
+    <li><a href="#itens">Itens</a></li>
+    <li><a href="#ferramentas">Ferramentas e armas</a></li>
+    <li><a href="#craft">Crafting</a></li>
+    <li><a href="#forno">Forno e culinária</a></li>
+    <li><a href="#pesca">Pesca</a></li>
+    <li><a href="#inventario">Inventário, hotbar e baús</a></li>
+    <li><a href="#npcs">Vila, NPCs, lojas e missão</a></li>
+    <li><a href="#mapas">Mapas</a></li>
+    <li><a href="#dungeons">Masmorras</a></li>
+    <li><a href="#minas">Minas abandonadas</a></li>
+    <li><a href="#navios">Navios e bote</a></li>
+    <li><a href="#conquistas">Conquistas</a></li>
+    <li><a href="#hardcore">Hardcore</a></li>
+    <li><a href="#salvamento">Salvamento, exportação e importação</a></li>
+    <li><a href="#multiplayer">Multiplayer</a></li>
+    <li><a href="#comandos">Comandos</a></li>
+    <li><a href="#probabilidades">Probabilidades e fórmulas</a></li>
+    <li><a href="#quirks">Comportamentos importantes da implementação atual</a></li>
+    <li><a href="#tecnico">Referência técnica</a></li>
+    <li><a href="#glossario">Glossário</a></li>
+  </ol>
+</nav>
 
-      <div class="toc">
-        <b>Nesta página</b>
-        1. Sobre · 2. Curiosidades · 3. Como jogar · 4. Casos · 5. Mundo · 6. Coisas
-      </div>
+<main>
+<section id="sobre">
+  <h2>1. Sobre DenseLands</h2>
+  <p>DenseLands é um RPG de mundo aberto em 2D com geração procedural, exploração, coleta de recursos, crafting, combate, animais, NPCs, missões, comércio, masmorras, minas, navegação, fome, ar, ciclo de dia e noite, conquistas, modo hardcore e suporte a partidas online/offline.</p>
+  <p>A ideia central é que uma <strong>seed</strong> determina a forma do mundo. O jogo pode recriar a mesma distribuição para a mesma seed, enquanto as alterações feitas pelo jogador são salvas separadamente.</p>
+  <p>O projeto também possui interface em <strong>pt-BR</strong>, <strong>en-US</strong> e <strong>es</strong>.</p>
+</section>
 
-      <h2 id="sobre">Sobre o jogo</h2>
-      <p>O mundo não vem pronto inteiro. Ele nasce de um número (a seed) e de um gerador de ruído. Cada pedaço de 16 por 16 blocos só é guardado se você já andou nele. O resto pode ser recriado depois, sempre igual, porque a seed não muda.</p>
-      <p>Não é um MMO de verdade: as “salas” ficam no aparelho (públicas ou com senha). Dá para exportar o mapa em arquivo e importar em outro lugar.</p>
+<section id="objetivo">
+  <h2>2. Objetivo e loop de jogo</h2>
+  <p>Não existe um único “final” codificado como objetivo obrigatório. O jogo funciona como sandbox: o jogador começa próximo de uma área de terra, coleta materiais e vai aumentando suas possibilidades.</p>
+  <p>Loop típico:</p>
+  <ol>
+    <li>Explorar a região inicial.</li>
+    <li>Coletar madeira e pedra.</li>
+    <li>Criar ferramentas iniciais.</li>
+    <li>Montar bancada, baús, forno e equipamentos melhores.</li>
+    <li>Encontrar vila, navios, minas, filão e portais de masmorra.</li>
+    <li>Conseguir minérios e ouro.</li>
+    <li>Derrotar inimigos e limpar estruturas.</li>
+    <li>Comer, dormir, atravessar água e continuar explorando.</li>
+  </ol>
+</section>
 
-      <h2 id="curiosidades">Curiosidades</h2>
-      <ul>
-        <li>O nome antigo era <i>Terras da Semente</i>. Virou DenseLands na versão atual.</li>
-        <li>Havia uma <b>mesa</b> e uma <b>bancada</b> ao mesmo tempo. A mesa saiu porque só confundia: hoje a bancada de 2 madeiras faz o craft grande.</li>
-        <li>Vilas não nascem coladas no spawn. O gerador empurra a primeira vila para uns 58 a 110 blocos — por isso “vila perto” nas seeds prontas ainda é uma caminhada curta, não um tapete na porta.</li>
-        <li>Mapas <b>não empilham</b>. Cada um lembra um lugar e, ao usar, desenha uma seta na tela.</li>
-        <li>Tocha afasta monstro. Vila e masmorra já nascem com algumas acesas.</li>
-        <li>Deck de madeira na água vira ponte. Se muitos mobs pisam em cima, o bloco pode quebrar e cair de volta no chão.</li>
-        <li>A seed <b>2054</b> já foi medida como um mundo “redondo”: terra no spawn, vila, portal e um pouco de água por perto.</li>
-        <li>Masmorra e mina não são o mapa de cima. A porta 3×3 abre uma <i>dimensão</i> cuja seed mistura mundo + X + Y da porta.</li>
-        <li>Cheats só existem se você marcar na criação. Depois é só apertar <code>/</code>.</li>
-      </ul>
+<section id="controles">
+  <h2>3. Controles</h2>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Ação</th><th>Teclado</th><th>Touch</th></tr></thead>
+    <tbody>
+      <tr><td>Mover</td><td>Setas</td><td>Joystick virtual</td></tr>
+      <tr><td>Atacar / usar ação ofensiva</td><td>Z</td><td>A</td></tr>
+      <tr><td>Interagir</td><td>X</td><td>B</td></tr>
+      <tr><td>Inventário</td><td>C</td><td>Botão I</td></tr>
+      <tr><td>Soltar item selecionado</td><td>Q</td><td>Arrastar para fora do inventário</td></tr>
+      <tr><td>Hotbar</td><td>1–4</td><td>Seleção pelo toque</td></tr>
+      <tr><td>Pausa</td><td>Botão de menu</td><td>Botão de menu</td></tr>
+      <tr><td>Comandos</td><td>/ quando cheats estiverem ativados</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p>Quando uma ação depende do item equipado, Z/A pode significar coisas diferentes: atacar, colocar um bloco/objeto ou pescar.</p>
+</section>
 
-      <h2 id="como">Como jogar</h2>
-      <h3>Primeiros minutos</h3>
-      <ol>
-        <li>Crie uma sala (ou pegue uma seed pronta).</li>
-        <li>Quebre árvores. Madeira cai no chão na sua direção — passe por cima.</li>
-        <li>Faça uma <b>bancada</b> (2 madeiras) e coloque no chão com Z.</li>
-        <li>Faça ferramentas. Machado corta árvore mais rápido; picareta quebra pedra e minério.</li>
-        <li>Ande até achar vila, casa abandonada, filão, navio, mina ou porta de masmorra.</li>
-        <li>Antes da noite: tocha, cama ou parede. Sem luz, a tela escurece e nascem criaturas.</li>
-      </ol>
+<section id="mundo">
+  <h2>4. Mundo e geração procedural</h2>
+  <h3>4.1 Tiles principais</h3>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Tile</th><th>Constante</th><th>Função</th></tr></thead>
+    <tbody>
+      <tr><td>Água</td><td>WATER</td><td>Regiões aquáticas; exige ar para permanecer submerso.</td></tr>
+      <tr><td>Areia</td><td>SAND</td><td>Faixa de transição próxima da água.</td></tr>
+      <tr><td>Grama</td><td>GRASS</td><td>Principal terreno terrestre.</td></tr>
+      <tr><td>Caminho</td><td>PATH</td><td>Usado em estruturas, entradas e pisos especiais.</td></tr>
+      <tr><td>Piso</td><td>FLOOR</td><td>Interior de estruturas e masmorras.</td></tr>
+      <tr><td>Parede</td><td>WALL</td><td>Limita edifícios e áreas internas.</td></tr>
+      <tr><td>Cama</td><td>BED</td><td>Ponto de sono dentro de casas/estruturas.</td></tr>
+    </tbody>
+  </table>
+  <h3>4.2 Escala</h3>
+  <p><strong>TILE = 40 px.</strong> Um chunk mede <strong>16 × 16 tiles</strong>, portanto ocupa 640 × 640 pixels no sistema lógico do mapa.</p>
+  <h3>4.3 Terreno</h3>
+  <p>A altura do terreno é calculada combinando cinco camadas de value noise via FBM. A altura final é:</p>
+  <pre>h = 0,62 × FBM(tx × 0,042, ty × 0,042, seed)
+  + 0,38 × FBM(tx × 0,018 + 40, ty × 0,018, seed + 7)</pre>
+  <p>A classificação do tile usa:</p>
+  <pre>h &lt; 0,42       → água
+0,42 ≤ h &lt; 0,47 → areia
+h ≥ 0,47       → grama</pre>
+  <p>Assim, a praia nasce naturalmente da faixa entre 0,42 e 0,47.</p>
+</section>
 
-      <h3 id="controles">Controles</h3>
-      <table class="data">
-        <tr><th></th><th>Computador</th><th>Celular</th></tr>
-        <tr><td>Andar</td><td>Setas</td><td>Joystick esquerdo</td></tr>
-        <tr><td>Atacar / colocar</td><td>Z</td><td>A</td></tr>
-        <tr><td>Usar / falar</td><td>X</td><td>B</td></tr>
-        <tr><td>Mochila</td><td>C</td><td>Botão I</td></tr>
-        <tr><td>Atalho</td><td>1 a 4</td><td>Toque na barra</td></tr>
-        <tr><td>Soltar item</td><td>Q</td><td>Arrastar para fora da mochila</td></tr>
-        <tr><td>Pausa</td><td>Esc</td><td>☰</td></tr>
-        <tr><td>Comando</td><td>/ (se cheats)</td><td>—</td></tr>
-      </table>
-      <p class="tip">Ataque: olhe para o lado certo, pare e aperte Z. Arco gasta flecha. Vara de pesca só funciona apontando para água e esperando.</p>
+<section id="seeds">
+  <h2>5. Seeds e determinismo</h2>
+  <p>Uma seed numérica é convertida em inteiro sem sinal. Strings são convertidas por uma função de hash baseada em FNV-1a. Se nenhuma seed for informada, o jogo gera uma seed pseudoaleatória.</p>
+  <p>A função <code>hash2(x, y, seed)</code> produz um número entre 0 e quase 1 e é usada para decisões espaciais. Para sequências aleatórias em masmorras/minas existe ainda um gerador do tipo LCG:</p>
+  <pre>s = (s × 1664525 + 1013904223) mod 2^32
+rnd = s / 2^32</pre>
+  <p>O resultado é um mundo reproduzível a partir da seed e das coordenadas. Estruturas de dimensão usam uma seed derivada de:</p>
+  <pre>hashStr(String(worldSeed) + ":" + wx + ":" + wy)</pre>
+</section>
 
-      <h2 id="casos">Como resolver casos</h2>
-      <div class="grid2">
-        <div class="card">
-          <h4>Estou sem comida</h4>
-          <p>Carne crua e peixe cru <b>não se comem</b>. Precisa de forno + madeira ou carvão. Pão a padeira vende. Vaca dá carne; vara + linha pesca peixe.</p>
-        </div>
-        <div class="card">
-          <h4>A fome zera</h4>
-          <p>A barra cai sozinha. Em zero você perde vida. Durma numa cama para recuperar um pouco. Assado enche mais que pão.</p>
-        </div>
-        <div class="card">
-          <h4>Estou me afogando</h4>
-          <p>Na água a barra de ar cai. Em terra sobe devagar. Bote ou bloco de madeira na água param o afogo. Hardcore <b>não nada</b>.</p>
-        </div>
-        <div class="card">
-          <h4>Noite escura demais</h4>
-          <p>Coloque tochas (madeira + carvão). Elas iluminam e empurram monstro. Vila é zona mais segura.</p>
-        </div>
-        <div class="card">
-          <h4>Não acho a vila</h4>
-          <p>Vilas são raras e longe. Use seed 942, o comando <code>/struct</code> (com cheats) ou compre mapa se achar uma cartógrafa.</p>
-        </div>
-        <div class="card">
-          <h4>Saco cheio</h4>
-          <p>Só 8 tipos de coisa (4+4), 32 por pilha. Mapas e armas não juntam. Faça um baú. Q joga no chão.</p>
-        </div>
-        <div class="card">
-          <h4>Inimigo atravessa?</h4>
-          <p>No mundo de cima, árvore, pedra, minério e bloco sólido bloqueiam. Dentro da masmorra a parede é tile de muro. Ataque parado, na frente do alvo.</p>
-        </div>
-        <div class="card">
-          <h4>Porta de masmorra</h4>
-          <p>O predinho 3×3 está vazio. Entre pela porta de baixo (X). Lá dentro o tipo e a dificuldade já tinham aparecido ao chegar perto.</p>
-        </div>
-        <div class="card">
-          <h4>Morri</h4>
-          <p>Tela de queda: acorde no spawn ou volte ao menu. Hardcore apaga o mundo — não há acordar.</p>
-        </div>
-        <div class="card">
-          <h4>Quero um lugar específico</h4>
-          <p>Use o mapa certo (masmorra, mina ou navio). A seta aponta. Cartógrafa vende os extras se der sorte.</p>
-        </div>
-      </div>
+<section id="estruturas">
+  <h2>6. Estruturas e pontos de interesse</h2>
+  <p>A função de setup cria, por mundo:</p>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Estrutura</th><th>Quantidade</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>Vila</td><td>1</td><td>3–6 casas, com 2–5 NPCs de acordo com o seed.</td></tr>
+      <tr><td>Portais de masmorra</td><td>5</td><td>Cada portal recebe tipo e dificuldade.</td></tr>
+      <tr><td>Navios</td><td>2</td><td>Posicionados em água profunda.</td></tr>
+      <tr><td>Casa</td><td>1</td><td>Estrutura pequena com cama e baú.</td></tr>
+      <tr><td>Filão</td><td>1</td><td>Área de 5×5 tiles com pedras/minérios.</td></tr>
+      <tr><td>Minas abandonadas</td><td>3</td><td>Cada uma possui entrada própria e geração procedural interna.</td></tr>
+    </tbody>
+  </table>
+  <h3>Distâncias nominais em tiles a partir da origem</h3>
+  <p>A posição angular é uniforme de 0 a 2π usando <code>hash2</code>. A distância é escolhida uniformemente no intervalo indicado e depois o algoritmo procura terra/água apropriada.</p>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Estrutura</th><th>Intervalo nominal</th></tr></thead>
+    <tbody>
+      <tr><td>Vila</td><td>58–110</td></tr>
+      <tr><td>Masmorra 1</td><td>48–95</td></tr>
+      <tr><td>Masmorra 2</td><td>58–109</td></tr>
+      <tr><td>Masmorra 3</td><td>68–123</td></tr>
+      <tr><td>Masmorra 4</td><td>78–137</td></tr>
+      <tr><td>Masmorra 5</td><td>88–151</td></tr>
+      <tr><td>Navio 1</td><td>55–130</td></tr>
+      <tr><td>Navio 2</td><td>70–160</td></tr>
+      <tr><td>Casa</td><td>32–78</td></tr>
+      <tr><td>Filão</td><td>22–55</td></tr>
+      <tr><td>Mina 1</td><td>40–88</td></tr>
+      <tr><td>Mina 2</td><td>52–104</td></tr>
+      <tr><td>Mina 3</td><td>64–120</td></tr>
+    </tbody>
+  </table>
+  <p>Esses intervalos são <strong>distâncias de tentativa</strong>, não garantias exatas, porque o jogo pode deslocar a posição até encontrar terreno válido.</p>
+</section>
 
-      <h2 id="mundo">O mundo</h2>
-      <p>O chão é água, areia/praia ou grama. Ilhas aparecem no meio do mar. Árvores e pedras bloqueiam passagem. Filões de pedra pura escondem minério no meio.</p>
-      <ul>
-        <li><b>Névoa:</b> chunk que você nunca visitou fica escondida. Hardcore mostra só a chunk atual.</li>
-        <li><b>Dia:</b> 5 minutos claros, 5 escuros. Cama em casa (sua ou de NPC) pula para de manhã, cura e afasta a noite.</li>
-        <li><b>Animais:</b> vaca (carne crua) e ovelha (lã) nascem aos poucos, nunca na névoa.</li>
-      </ul>
+<section id="chunks">
+  <h2>7. Chunks e carregamento do mundo</h2>
+  <p>O mundo é dividido em chunks de 16×16 tiles. Um chunk é gerado apenas quando necessário.</p>
+  <p>O chunk guarda, entre outras coisas:</p>
+  <ul>
+    <li>tiles;</li>
+    <li>árvores;</li>
+    <li>pedras;</li>
+    <li>minérios;</li>
+    <li>animais;</li>
+    <li>inimigos;</li>
+    <li>objetos colocados pelo jogador.</li>
+  </ul>
+  <p>No modo normal, somente os chunks visitados entram no salvamento persistente. Isso reduz a quantidade de mundo que precisa ser serializada.</p>
+  <p>No hardcore, a visibilidade também é limitada ao chunk atual.</p>
+</section>
 
-      <h2 id="estruturas">Estruturas</h2>
-      <table class="data">
-        <tr><th>Estrutura</th><th>Onde</th><th>O que tem</th></tr>
-        <tr><td>Vila</td><td>Terra, longe do spawn</td><td>Casas RNG, tochas, aldeões que andam, loja e missão</td></tr>
-        <tr><td>Casa abandonada</td><td>Campo</td><td>Cama e baú com madeira</td></tr>
-        <tr><td>Navio abandonado</td><td>Alto-mar</td><td>Baús com pedra (por enquanto)</td></tr>
-        <tr><td>Filão</td><td>Terra firme</td><td>Pedra densa e minérios no miolo</td></tr>
-        <tr><td>Porta de masmorra</td><td>3×3 no mundo</td><td>Dimensão: simples, dupla ou complexa</td></tr>
-        <tr><td>Mina abandonada</td><td>3×3 no mundo</td><td>Túneis, pedra, minério, monstros com o tempo</td></tr>
-      </table>
+<section id="tempo">
+  <h2>8. Tempo, dia e noite</h2>
+  <p><strong>DAY_LEN = 600</strong>. O ciclo é tratado como uma fração:</p>
+  <pre>cyclePos = ((time % 600) + 600) % 600 / 600</pre>
+  <p>O jogo considera <strong>0,5 ou mais como noite</strong>.</p>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Estado</th><th>Posição aproximada do ciclo</th></tr></thead>
+    <tbody>
+      <tr><td>Dia</td><td>0,00–0,499...</td></tr>
+      <tr><td>Noite</td><td>0,50–0,999...</td></tr>
+    </tbody>
+  </table>
+  <p>Ao dormir, o tempo avança para uma manhã e o jogador recupera toda a vida, além de +6 de fome, sem ultrapassar o máximo.</p>
+</section>
 
-      <h2 id="npcs">Aldeões</h2>
-      <p>O número de casas e o tipo de cada um mudam por vila. Eles caminham pelo pátio.</p>
-      <table class="data">
-        <tr><th>Ofício</th><th>O que faz</th></tr>
-        <tr><td>Mercadora</td><td>Compra madeira/pedra, vende pão</td></tr>
-        <tr><td>Lenhador</td><td>Missão: 10 madeiras → 18 de ouro</td></tr>
-        <tr><td>Ferreiro</td><td>Lembra que a bancada libera receitas</td></tr>
-        <tr><td>Cartógrafa</td><td>Vende mapa de masmorra; às vezes mina e navio</td></tr>
-        <tr><td>Padeira</td><td>Pão por 5 ouros</td></tr>
-        <tr><td>Pescador</td><td>Vende bote</td></tr>
-        <tr><td>Pedreira</td><td>Compra pedra e vende bloco de pedra</td></tr>
-      </table>
+<section id="jogador">
+  <h2>9. Jogador: vida, fome e ar</h2>
+  <h3>Vida</h3>
+  <p>O jogador começa com <strong>20 HP</strong> e 20 HP máximos.</p>
+  <p>Ao sofrer dano, o modo hardcore dobra o dano recebido:</p>
+  <pre>dano final = dano normal × 2 (hardcore)
+dano final = dano normal       (normal)</pre>
+  <h3>Fome</h3>
+  <p>O máximo de fome é <strong>20</strong>. A cada aproximadamente 24 segundos de tempo de simulação, a fome diminui 1.</p>
+  <p>Quando a fome chega a 0, o jogador sofre 1 de dano.</p>
+  <h3>Ar</h3>
+  <p>O máximo de ar é <strong>20</strong>. Debaixo d'água, o ar diminui 1 a cada aproximadamente 0,55 s. Ao chegar a 0, o jogador sofre 2 de dano.</p>
+  <p>Fora d'água, o ar recupera 1 a cada aproximadamente 1,05 s, até 20.</p>
+  <h3>Comida</h3>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Comida</th><th>Fome restaurada</th><th>Vida restaurada</th></tr></thead>
+    <tbody>
+      <tr><td>Pão</td><td>5</td><td>3</td></tr>
+      <tr><td>Carne assada</td><td>8</td><td>4</td></tr>
+      <tr><td>Peixe assado</td><td>6</td><td>3</td></tr>
+    </tbody>
+  </table>
+  <p>A vida recuperada pela comida é calculada como <code>ceil(fomeRestaurada / 2)</code>, limitada pela vida máxima.</p>
+</section>
 
-      <h2 id="mobs">Criaturas</h2>
-      <table class="data">
-        <tr><th>Nome</th><th>Jeito</th><th>Nota</th></tr>
-        <tr><td>Gosma</td><td>Verde, lenta, pouco dano</td><td>Cai ouro</td></tr>
-        <tr><td>Sombra</td><td>Roxa, mais forte</td><td>Mais ouro</td></tr>
-        <tr><td>Esqueleto</td><td>Branco, atira de longe</td><td>Pode dropar 1–3 flechas</td></tr>
-        <tr><td>Vaca</td><td>Anda no campo</td><td>Carne crua</td></tr>
-        <tr><td>Ovelha</td><td>Anda no campo</td><td>Lã</td></tr>
-      </table>
-      <p class="note">Tocha forte faz o monstro recuar. Na mina abandonada eles continuam nascendo enquanto você fica lá dentro.</p>
+<section id="combate">
+  <h2>10. Combate</h2>
+  <p>O combate é direcional. O alvo precisa estar dentro do alcance e suficientemente alinhado com a direção atual do jogador.</p>
+  <p>O ataque respeita um intervalo de recuperação definido por <code>rate</code>, em milissegundos, em cada arma.</p>
+  <p>Os punhos causam <strong>2 de dano</strong>, têm intervalo de 450 ms e durabilidade infinita.</p>
+  <p>Armas com durabilidade finita perdem 1 ponto de durabilidade por ataque que entra no processamento do ataque. Ao chegar a 0, são removidas do slot selecionado.</p>
+</section>
 
-      <h2 id="itens">Itens</h2>
-      <h3>Recursos</h3>
-      <p>Madeira, pedra, carvão, lã, linha, ouro, minérios brutos (ferro, cobre, ouro) e os lingotes depois do forno. Comida: pão, carne/peixe crus e assados.</p>
-      <h3>Colocáveis</h3>
-      <table class="data">
-        <tr><th>Item</th><th>Receita / uso</th></tr>
-        <tr><td>Bloco de madeira</td><td>4 madeiras. Também serve de ponte na água</td></tr>
-        <tr><td>Bloco de pedra</td><td>4 pedras. Parede firme</td></tr>
-        <tr><td>Bancada</td><td>2 madeiras. Abre o craft grande</td></tr>
-        <tr><td>Forno</td><td>8 pedras. Assa e funde</td></tr>
-        <tr><td>Baú</td><td>4 madeiras. 4 espaços extra</td></tr>
-        <tr><td>Cama</td><td>6 madeiras + 3 lã. Dorme até de manhã</td></tr>
-        <tr><td>Bote</td><td>6 madeiras. Só na água; anda com você</td></tr>
-        <tr><td>Tocha</td><td>1 madeira + 1 carvão = 4. Luz e afasta mob</td></tr>
-      </table>
-      <h3>Mapas</h3>
-      <p>Mapa da masmorra, da mina e do navio. Um não empilha no outro. Usar (atalho) liga a seta até o ponto gravado no papel.</p>
+<section id="inimigos">
+  <h2>11. Inimigos</h2>
+  <h3>Inimigos normais</h3>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Tipo</th><th>Probabilidade nominal de seleção em makeEnemy()</th><th>HP</th><th>Dano</th><th>Velocidade</th><th>Ouro</th></tr></thead>
+    <tbody>
+      <tr><td>Gosma</td><td>40%</td><td>10</td><td>2</td><td>40</td><td>4</td></tr>
+      <tr><td>Sombra</td><td>32%</td><td>16</td><td>4</td><td>55</td><td>8</td></tr>
+      <tr><td>Esqueleto</td><td>28%</td><td>12</td><td>3</td><td>42</td><td>5</td></tr>
+    </tbody>
+  </table>
+  <p>Os percentuais são derivados de <code>roll &gt; 0,72</code> para esqueleto, <code>roll &gt; 0,40</code> para sombra e o restante para gosma.</p>
+  <h3>Comportamento</h3>
+  <ul>
+    <li>Inimigos perseguem o jogador em determinadas distâncias.</li>
+    <li>Esqueletos podem disparar projéteis quando o jogador está a distância adequada.</li>
+    <li>A luz de tochas influencia o comportamento: inimigos podem recuar quando ficam muito iluminados.</li>
+    <li>A vila é uma zona segura para monstros noturnos.</li>
+  </ul>
+  <h3>Recompensas</h3>
+  <p>Ao derrotar um inimigo, ele solta ouro igual ao seu valor de <code>gold</code>. Esqueletos também soltam de 1 a 3 flechas.</p>
+</section>
 
-      <h2 id="craft">Criação e forno</h2>
-      <p>A mochila mostra 8 espaços à esquerda e o craft à direita. Dá para filtrar: todos / craftável / falta algo, e as abas ferramentas, construção, utilitários. Arraste para trocar de lugar.</p>
-      <h3>Na mão (sem bancada)</h3>
-      <p>Porrete, ferramentas de madeira, blocos, bancada e tocha.</p>
-      <h3>Na bancada</h3>
-      <p>Bote, cama, linha, vara, arco, flecha (1 madeira + 1 pedra = 3 flechas), forno, baú, lança e as ferramentas de pedra, cobre e ferro.</p>
-      <h3>Forno</h3>
-      <p>Precisa de um item cru e de fogo (carvão preferido, senão madeira).</p>
-      <ul>
-        <li>Carne crua → carne assada (fome +8)</li>
-        <li>Peixe cru → peixe assado (fome +6)</li>
-        <li>Minério de ferro / cobre / ouro → lingote</li>
-        <li>Pão enche +5 e não precisa de forno</li>
-      </ul>
+<section id="animais">
+  <h2>12. Animais</h2>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Animal</th><th>HP</th><th>Velocidade</th><th>Drop ao morrer</th></tr></thead>
+    <tbody>
+      <tr><td>Vaca</td><td>10</td><td>28</td><td>2 carnes cruas</td></tr>
+      <tr><td>Ovelha</td><td>6</td><td>34</td><td>2 lãs</td></tr>
+    </tbody>
+  </table>
+  <h3>Geração inicial por chunk</h3>
+  <p>Há uma chance de <strong>45%</strong> de o chunk receber um animal, pois a condição é <code>hash2(cx, cy, seed + 17) &gt; 0,55</code>.</p>
+  <p>Quando criado dessa forma, o animal tem divisão nominal de 50% vaca / 50% ovelha.</p>
+  <h3>Spawn adicional</h3>
+  <p>O sistema tenta gerar animais periodicamente, desde que haja menos de 5 animais num raio de 520 px do jogador. Na seleção desse spawn, a divisão nominal é <strong>55% vaca / 45% ovelha</strong>.</p>
+</section>
 
-      <h2 id="combate">Combate e ferramentas</h2>
-      <p>Três formas: <b>machado</b> (área, corta árvore rápido), <b>picareta</b> (pouco dano, quebra pedra/minério rápido), <b>espada</b> (melhor contra mob). Materiais: madeira → pedra → cobre → ferro. Cada uma tem dano, intervalo e durabilidade diferentes. A barra embaixo do ícone é a vida da ferramenta.</p>
-      <p>Arco precisa de flecha. Porrete é o taco simples de 5 madeiras.</p>
+<section id="recursos">
+  <h2>13. Recursos</h2>
+  <p>Os recursos básicos do mundo são madeira, pedra e minérios. Árvores e pedras aparecem principalmente em áreas de grama.</p>
+  <h3>Árvores</h3>
+  <p>Em grama, uma árvore só aparece quando duas condições são satisfeitas:</p>
+  <pre>FBM(tx × 0,09, ty × 0,09, seed + 99) &gt; 0,58
+E
+hash2(tx, ty, seed + 21) &gt; 0,72</pre>
+  <p>Se tratarmos a saída da hash como aproximadamente uniforme e independente da FBM para uma estimativa simples, o segundo teste sozinho teria 28%. A chance conjunta <strong>não é 28%</strong>, porque também exige o limiar da FBM; a implementação não define uma probabilidade analítica simples para a FBM.</p>
+  <h3>Pedras</h3>
+  <p>Em grama, quando uma árvore não foi escolhida, uma pedra aparece se <code>hash2(...) &gt; 0,965</code>, isto é, <strong>3,5%</strong> nominal para esse teste.</p>
+  <h3>Mineração normal</h3>
+  <p>Veios usam regiões especiais e aplicam testes de hash para decidir entre minério e pedra.</p>
+</section>
 
-      <h2 id="dungeons">Masmorras e minas</h2>
-      <h3>Masmorra</h3>
-      <ul>
-        <li><b>Simples:</b> sala inicial e sala do baú, poucos monstros.</li>
-        <li><b>Dupla:</b> duas ou mais saídas, labirinto curto, ouro e minério nos baús.</li>
-        <li><b>Complexa:</b> labirinto grande e cheio de inimigos.</li>
-      </ul>
-      <p>A dificuldade (fácil, média, difícil) aparece ao chegar na porta e muda vida e dano dos bichos de dentro.</p>
-      <h3>Mina</h3>
-      <p>Não é sala de baú elegante: é um formigueiro de pedra e minério. Monstros vão surgindo com o tempo. Saia pela mesma lógica da masmorra (ponto de saída).</p>
+<section id="itens">
+  <h2>14. Itens</h2>
+  <p>A maioria dos itens empilha até <strong>32</strong>. Armas ocupam uma unidade por slot.</p>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>ID</th><th>Nome</th><th>Stack</th><th>Observações</th></tr></thead>
+    <tbody>
+      <tr><td>madeira</td><td>Madeira</td><td>32</td><td>Material básico.</td></tr>
+      <tr><td>pedra</td><td>Pedra</td><td>32</td><td>Material básico.</td></tr>
+      <tr><td>ouro</td><td>Ouro</td><td>32</td><td>Moeda usada em comércio e recompensas.</td></tr>
+      <tr><td>ferro_bruto</td><td>Minério de ferro</td><td>32</td><td>Vai ao forno.</td></tr>
+      <tr><td>ferro</td><td>Ferro</td><td>32</td><td>Material de crafting avançado.</td></tr>
+      <tr><td>cobre_bruto</td><td>Minério de cobre</td><td>32</td><td>Vai ao forno.</td></tr>
+      <tr><td>cobre</td><td>Cobre</td><td>32</td><td>Material de crafting avançado.</td></tr>
+      <tr><td>ouro_bruto</td><td>Minério de ouro</td><td>32</td><td>Vai ao forno e vira ouro.</td></tr>
+      <tr><td>carvao</td><td>Carvão</td><td>32</td><td>Combustível.</td></tr>
+      <tr><td>la</td><td>Lã</td><td>32</td><td>Usada em cama e linha.</td></tr>
+      <tr><td>linha</td><td>Linha</td><td>32</td><td>Usada em vara, arco etc.</td></tr>
+      <tr><td>flecha</td><td>Flecha</td><td>32</td><td>Consumida por arco.</td></tr>
+      <tr><td>pao</td><td>Pão</td><td>32</td><td>Comida pronta.</td></tr>
+      <tr><td>carne_crua</td><td>Carne crua</td><td>32</td><td>Precisa ser assada.</td></tr>
+      <tr><td>carne</td><td>Carne assada</td><td>32</td><td>Comida.</td></tr>
+      <tr><td>peixe_cru</td><td>Peixe cru</td><td>32</td><td>Precisa ser assado.</td></tr>
+      <tr><td>peixe</td><td>Peixe assado</td><td>32</td><td>Comida.</td></tr>
+      <tr><td>tocha</td><td>Tocha</td><td>32</td><td>Objeto de luz.</td></tr>
+      <tr><td>bloco_madeira</td><td>Bloco de madeira</td><td>32</td><td>Colocável; HP 5.</td></tr>
+      <tr><td>bloco_pedra</td><td>Bloco de pedra</td><td>32</td><td>Colocável; HP 9.</td></tr>
+      <tr><td>bancada</td><td>Bancada</td><td>32</td><td>Libera receitas da bancada; HP 5.</td></tr>
+      <tr><td>forno</td><td>Forno</td><td>32</td><td>Colocável; HP 10.</td></tr>
+      <tr><td>bau</td><td>Baú</td><td>32</td><td>Colocável; HP 7; 4 slots.</td></tr>
+      <tr><td>bau_grande</td><td>Baú grande</td><td>32</td><td>Colocável; HP 10; 8 slots.</td></tr>
+      <tr><td>porta</td><td>Porta</td><td>32</td><td>Colocável; HP 6.</td></tr>
+      <tr><td>placa</td><td>Placa</td><td>32</td><td>Texto máximo de 80 caracteres; HP 3.</td></tr>
+      <tr><td>cama</td><td>Cama</td><td>32</td><td>Permite dormir.</td></tr>
+      <tr><td>bote</td><td>Bote</td><td>32</td><td>Usado para atravessar água.</td></tr>
+      <tr><td>mapa_masmorra</td><td>Mapa da masmorra</td><td>1</td><td>Marca uma masmorra.</td></tr>
+      <tr><td>mapa_mina</td><td>Mapa da mina</td><td>1</td><td>Marca uma mina.</td></tr>
+      <tr><td>mapa_navio</td><td>Mapa do navio</td><td>1</td><td>Marca um navio.</td></tr>
+    </tbody>
+  </table>
+</section>
 
-      <h2 id="modos">Modos e comandos</h2>
-      <p><b>Hardcore:</b> só a chunk atual visível, toma o dobro de dano, não nada, e a morte apaga o mundo.</p>
-      <p><b>Cheats</b> (marcados na criação, depois <code>/</code>):</p>
-      <table class="data">
-        <tr><th>Comando</th><th>Efeito</th></tr>
-        <tr><td>/hp 20</td><td>Muda a vida</td></tr>
-        <tr><td>/give madeira 10</td><td>Entrega item</td></tr>
-        <tr><td>/spawn</td><td>Nasce um mob perto</td></tr>
-        <tr><td>/struct</td><td>Aponta a estrutura mais próxima</td></tr>
-        <tr><td>/time dia | noite</td><td>Muda o relógio</td></tr>
-      </table>
+<section id="ferramentas">
+  <h2>15. Ferramentas e armas</h2>
+  <p>Todos os valores abaixo vêm diretamente da definição de itens do jogo. <code>rate</code> representa o intervalo de ataque usado pelo código, e <code>dur</code> é a durabilidade inicial.</p>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Arma/ferramenta</th><th>Dano</th><th>Rate (ms)</th><th>Durabilidade</th><th>Força em árvore</th><th>Força em pedra/minério</th><th>Área</th></tr></thead>
+    <tbody>
+      <tr><td>Punhos</td><td>2</td><td>450</td><td>∞</td><td>1</td><td>1</td><td>Não</td></tr>
+      <tr><td>Porrete</td><td>4</td><td>420</td><td>40</td><td>1</td><td>1</td><td>Não</td></tr>
+      <tr><td>Lança</td><td>8</td><td>300</td><td>45</td><td>1</td><td>1</td><td>Não</td></tr>
+      <tr><td>Machado de madeira</td><td>3</td><td>600</td><td>28</td><td>2</td><td>1</td><td>Sim</td></tr>
+      <tr><td>Picareta de madeira</td><td>2</td><td>540</td><td>28</td><td>1</td><td>2</td><td>Não</td></tr>
+      <tr><td>Espada de madeira</td><td>6</td><td>400</td><td>32</td><td>1</td><td>1</td><td>Não</td></tr>
+      <tr><td>Machado de pedra</td><td>5</td><td>560</td><td>55</td><td>3</td><td>1</td><td>Sim</td></tr>
+      <tr><td>Picareta de pedra</td><td>3</td><td>500</td><td>60</td><td>1</td><td>3</td><td>Não</td></tr>
+      <tr><td>Espada de pedra</td><td>10</td><td>360</td><td>70</td><td>1</td><td>1</td><td>Não</td></tr>
+      <tr><td>Machado de cobre</td><td>6</td><td>540</td><td>80</td><td>4</td><td>1</td><td>Sim</td></tr>
+      <tr><td>Picareta de cobre</td><td>3</td><td>480</td><td>85</td><td>1</td><td>4</td><td>Não</td></tr>
+      <tr><td>Espada de cobre</td><td>13</td><td>350</td><td>90</td><td>1</td><td>1</td><td>Não</td></tr>
+      <tr><td>Machado de ferro</td><td>7</td><td>520</td><td>110</td><td>5</td><td>1</td><td>Sim</td></tr>
+      <tr><td>Picareta de ferro</td><td>4</td><td>460</td><td>120</td><td>1</td><td>5</td><td>Não</td></tr>
+      <tr><td>Espada de ferro</td><td>16</td><td>340</td><td>130</td><td>1</td><td>1</td><td>Não</td></tr>
+      <tr><td>Vara de pesca</td><td>1</td><td>800</td><td>40</td><td>—</td><td>—</td><td>—</td></tr>
+      <tr><td>Arco</td><td>9</td><td>520</td><td>60</td><td>—</td><td>—</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p>Os aliases <code>machado</code>, <code>picareta</code> e <code>espada</code> apontam para suas versões de pedra; <code>mesa</code> aponta para <code>bancada</code>.</p>
+</section>
 
-      <h2 id="seeds">Seeds prontas</h2>
-      <p>Medidas no gerador atual (distâncias aproximadas a partir do spawn):</p>
-      <table class="data">
-        <tr><th>Nome</th><th>Seed</th><th>Por quê</th></tr>
-        <tr><td>Vila perto</td><td>942</td><td>Vila a ~42 blocos</td></tr>
-        <tr><td>Mina perto</td><td>5398</td><td>Mina a ~29 blocos</td></tr>
-        <tr><td>Navio perto</td><td>7437</td><td>Navio quase colado</td></tr>
-        <tr><td>Ilha deserta</td><td>2351</td><td>Pouca terra, muito mar</td></tr>
-        <tr><td>Dungeon perto</td><td>7089</td><td>Portal a ~36 blocos</td></tr>
-      </table>
-      <p class="warn">Seed pronta não muda as regras. No hardcore a ilha deserta ainda é dura: sem nado, sem visão longa, fome e noite iguais.</p>
+<section id="craft">
+  <h2>16. Crafting</h2>
+  <h3>Receitas iniciais</h3>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Resultado</th><th>Materiais</th></tr></thead>
+    <tbody>
+      <tr><td>Porrete</td><td>5 madeira</td></tr>
+      <tr><td>Machado de madeira</td><td>6 madeira</td></tr>
+      <tr><td>Picareta de madeira</td><td>5 madeira</td></tr>
+      <tr><td>Espada de madeira</td><td>6 madeira</td></tr>
+      <tr><td>Bancada</td><td>2 madeira</td></tr>
+    </tbody>
+  </table>
+  <h3>Receitas da bancada</h3>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Resultado</th><th>Materiais</th><th>Quantidade produzida</th></tr></thead>
+    <tbody>
+      <tr><td>Bloco de madeira</td><td>4 madeira</td><td>1</td></tr>
+      <tr><td>Bloco de pedra</td><td>4 pedra</td><td>1</td></tr>
+      <tr><td>Tocha</td><td>1 madeira + 1 carvão</td><td>4</td></tr>
+      <tr><td>Bote</td><td>6 madeira</td><td>1</td></tr>
+      <tr><td>Cama</td><td>6 madeira + 3 lã</td><td>1</td></tr>
+      <tr><td>Linha</td><td>2 lã</td><td>1</td></tr>
+      <tr><td>Vara</td><td>3 madeira + 2 linha</td><td>1</td></tr>
+      <tr><td>Arco</td><td>4 madeira + 3 linha</td><td>1</td></tr>
+      <tr><td>Flecha</td><td>1 madeira + 1 pedra</td><td>3</td></tr>
+      <tr><td>Forno</td><td>8 pedra</td><td>1</td></tr>
+      <tr><td>Baú</td><td>4 madeira</td><td>1</td></tr>
+      <tr><td>Baú grande</td><td>2 baús</td><td>1</td></tr>
+      <tr><td>Porta</td><td>6 madeira</td><td>1</td></tr>
+      <tr><td>Placa</td><td>1 madeira</td><td>1</td></tr>
+      <tr><td>Lança</td><td>6 madeira + 2 pedra</td><td>1</td></tr>
+      <tr><td>Machado de pedra</td><td>4 madeira + 3 pedra</td><td>1</td></tr>
+      <tr><td>Picareta de pedra</td><td>3 madeira + 4 pedra</td><td>1</td></tr>
+      <tr><td>Espada de pedra</td><td>3 madeira + 5 pedra</td><td>1</td></tr>
+      <tr><td>Machado de cobre</td><td>4 madeira + 4 cobre</td><td>1</td></tr>
+      <tr><td>Picareta de cobre</td><td>3 madeira + 5 cobre</td><td>1</td></tr>
+      <tr><td>Espada de cobre</td><td>2 madeira + 6 cobre</td><td>1</td></tr>
+      <tr><td>Machado de ferro</td><td>4 madeira + 4 ferro</td><td>1</td></tr>
+      <tr><td>Picareta de ferro</td><td>3 madeira + 5 ferro</td><td>1</td></tr>
+      <tr><td>Espada de ferro</td><td>2 madeira + 6 ferro</td><td>1</td></tr>
+    </tbody>
+  </table>
+  <p>Há duas entradas da receita de tocha no código; portanto a lista-fonte contém uma duplicação da receita.</p>
+</section>
 
-      <footer>
-        DenseLands Wiki · página de jogador, não oficial de editora nenhuma · o jogo vive no arquivo DenseLands.html neste mesmo pacote.
-      </footer>
-    </article>
-  </div>
+<section id="forno">
+  <h2>17. Forno e culinária</h2>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Entrada</th><th>Saída</th></tr></thead>
+    <tbody>
+      <tr><td>Carne crua</td><td>Carne assada</td></tr>
+      <tr><td>Peixe cru</td><td>Peixe assado</td></tr>
+      <tr><td>Minério de ferro</td><td>Ferro</td></tr>
+      <tr><td>Minério de cobre</td><td>Cobre</td></tr>
+      <tr><td>Minério de ouro</td><td>Ouro</td></tr>
+    </tbody>
+  </table>
+  <p>O combustível usado é <strong>carvão ou madeira</strong>. O código tenta consumir carvão primeiro; se não houver, tenta usar uma madeira.</p>
+</section>
+
+<section id="pesca">
+  <h2>18. Pesca</h2>
+  <p>Com a vara selecionada, Z/A inicia a pesca apenas se o tile à frente for água.</p>
+  <p>O tempo de espera é:</p>
+  <pre>2,2 + Math.random() × 1,8 segundos</pre>
+  <p>Portanto o peixe aparece entre 2,2 e 4,0 segundos após a fisgada. Ao terminar, o jogador recebe exatamente 1 <strong>peixe cru</strong>.</p>
+</section>
+
+<section id="inventario">
+  <h2>19. Inventário, hotbar e baús</h2>
+  <p>O jogador possui:</p>
+  <ul>
+    <li><strong>4 slots de inventário</strong>;</li>
+    <li><strong>4 slots de hotbar</strong>;</li>
+    <li><strong>32 unidades por stack</strong> para itens empilháveis.</li>
+  </ul>
+  <p>Armas não empilham: cada arma ocupa um slot e guarda dano, rate e durabilidade próprios.</p>
+  <h3>Baús</h3>
+  <p>Baú normal: 4 slots.</p>
+  <p>Baú grande: 8 slots.</p>
+  <p>Itens podem ser transferidos entre o baú e a mochila; o código prioriza empilhar com um item igual antes de usar um slot vazio.</p>
+</section>
+
+<section id="npcs">
+  <h2>20. Vila, NPCs, lojas e missão</h2>
+  <h3>Vila</h3>
+  <p>Uma vila é criada com <strong>3 a 6 casas</strong>. Os tipos de prédio usam nomes escolhidos de:</p>
+  <p>Casa, Barraca, Forja, Loja, Cabana e Oficina.</p>
+  <h3>NPCs</h3>
+  <p>O jogo possui estes papéis:</p>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Profissão</th><th>Função</th></tr></thead>
+    <tbody>
+      <tr><td>Mercadora</td><td>Trocas de madeira/pedra e compra de pão.</td></tr>
+      <tr><td>Lenhador</td><td>Missão de 10 madeiras.</td></tr>
+      <tr><td>Ferreiro</td><td>Explica a bancada.</td></tr>
+      <tr><td>Cartógrafa</td><td>Vende mapas conforme a sorte local.</td></tr>
+      <tr><td>Padeira</td><td>Vende pão.</td></tr>
+      <tr><td>Pescador</td><td>Vende bote.</td></tr>
+      <tr><td>Pedreira</td><td>Compra pedra e vende bloco de pedra.</td></tr>
+    </tbody>
+  </table>
+  <h3>Missão do lenhador</h3>
+  <p>Entregar 10 madeiras recompensa o jogador com <strong>18 ouro</strong> e a missão passa para concluída.</p>
+  <h3>Comércio</h3>
+  <p>O preço base de um NPC é gerado como:</p>
+  <pre>price = 4 + floor(salesRoll × 6)</pre>
+  <p>Assim, o preço base nominal varia de <strong>4 a 9 ouro</strong>.</p>
+  <p>Vender 5 madeiras rende <code>price</code> ouro; vender 5 pedras rende <code>price + 2</code> ouro.</p>
+  <p>Pão custa 5 ouro; bloco de pedra custa 8 ouro; bote custa 12 ouro.</p>
+</section>
+
+<section id="mapas">
+  <h2>21. Mapas</h2>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Mapa</th><th>Preço</th><th>Destino</th><th>Chance/condição</th></tr></thead>
+    <tbody>
+      <tr><td>Mapa da masmorra</td><td>20 ouro</td><td>Primeira masmorra</td><td>Sempre disponível para a cartógrafa.</td></tr>
+      <tr><td>Mapa da mina</td><td>24 ouro</td><td>Primeira mina</td><td>Disponível se <code>luck &gt; 0,35</code> → 65% nominal.</td></tr>
+      <tr><td>Mapa do navio</td><td>22 ouro</td><td>Primeiro navio</td><td>Disponível se <code>luck &gt; 0,62</code> → 38% nominal.</td></tr>
+    </tbody>
+  </table>
+  <p>Essa “chance” determina a disponibilidade da opção de compra no diálogo, não o sucesso da compra depois que a opção já apareceu.</p>
+</section>
+
+<section id="dungeons">
+  <h2>22. Masmorras</h2>
+  <h3>Tipos</h3>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Tipo</th><th>Probabilidade nominal</th><th>Tamanho</th><th>Salas</th><th>Inimigos base</th></tr></thead>
+    <tbody>
+      <tr><td>Simples</td><td>40%</td><td>17×9</td><td>2</td><td>2</td></tr>
+      <tr><td>Dupla</td><td>35%</td><td>23×19</td><td>4</td><td>6</td></tr>
+      <tr><td>Complexa</td><td>25%</td><td>31×31</td><td>16</td><td>14</td></tr>
+    </tbody>
+  </table>
+  <p>Os tipos são escolhidos por faixas: &lt;0,40 simples; &lt;0,75 dupla; restante complexa.</p>
+  <h3>Dificuldade</h3>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Dificuldade</th><th>Probabilidade nominal</th><th>Multiplicador</th></tr></thead>
+    <tbody>
+      <tr><td>Fácil</td><td>34%</td><td>0,70</td></tr>
+      <tr><td>Média</td><td>36%</td><td>1,00</td></tr>
+      <tr><td>Difícil</td><td>30%</td><td>1,45</td></tr>
+    </tbody>
+  </table>
+  <p>O multiplicador afeta HP e dano dos inimigos. A quantidade de inimigos é aproximadamente <code>round(base × multiplicador)</code>, com mínimo 1.</p>
+  <h3>Loot de baús</h3>
+  <p>Cada sala de loot normalmente recebe 2–8 ouro antes do multiplicador de dificuldade, arredondado.</p>
+  <p>Masmorra simples não recebe minério no baú de loot.</p>
+  <p>Masmorras dupla/complexa podem receber de 0 a aproximadamente 3 unidades de minério antes do multiplicador, novamente arredondadas.</p>
+  <p>Em masmorra complexa, cada sala de loot só recebe baú se <code>rnd(R) ≤ 0,45</code>. Portanto existe uma chance nominal de <strong>45%</strong> de gerar o baú em cada sala de loot complexa.</p>
+  <p>Quando o minério do baú existe, a seleção é 50% cobre bruto / 50% ferro bruto.</p>
+  <h3>Layout</h3>
+  <p>A simples tem duas salas de 5×5 ligadas por um corredor. A dupla tem quatro salas de 5×5 formando uma cruz. A complexa usa uma grade 4×4 de salas 5×5 ligadas por corredores.</p>
+</section>
+
+<section id="minas">
+  <h2>23. Minas abandonadas</h2>
+  <p>Cada mina é uma área de <strong>27×23 tiles</strong>.</p>
+  <p>O caminho é criado por uma caminhada aleatória de 280 passos. A cada passo, uma das quatro direções tem chance de 25% de ser escolhida.</p>
+  <h3>Distribuição de recursos por posição de piso elegível</h3>
+  <p>Após os primeiros 8 pontos do caminho, cada ponto recebe um teste:</p>
+  <pre>roll &gt; 0,86 → minério (14%)
+0,62 &lt; roll ≤ 0,86 → pedra (24%)
+0,58 &lt; roll ≤ 0,62 → tocha (4%)
+roll ≤ 0,58 → nada</pre>
+  <p>Se a posição virar minério, uma nova amostra decide o tipo:</p>
+  <pre>ouro bruto: 25%
+ferro bruto: 30%
+cobre bruto: 45%</pre>
+  <p>Considerando as duas decisões independentes, uma aproximação por posição elegível é:</p>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Resultado</th><th>Chance aproximada</th></tr></thead>
+    <tbody>
+      <tr><td>Ouro bruto</td><td>14% × 25% = 3,5%</td></tr>
+      <tr><td>Ferro bruto</td><td>14% × 30% = 4,2%</td></tr>
+      <tr><td>Cobre bruto</td><td>14% × 45% = 6,3%</td></tr>
+      <tr><td>Qualquer minério</td><td>14%</td></tr>
+      <tr><td>Pedra</td><td>24%</td></tr>
+      <tr><td>Tocha</td><td>4%</td></tr>
+      <tr><td>Nada</td><td>58%</td></tr>
+    </tbody>
+  </table>
+  <p>Os 8 primeiros pontos do caminho são ignorados pela distribuição, então não devem ser incluídos numa média ingênua para toda a mina.</p>
+  <p>Minas possuem respawn de inimigos: a cada aproximadamente 9 s o código tenta adicionar outro inimigo quando há menos de 7 vivos.</p>
+</section>
+
+<section id="navios">
+  <h2>24. Navios e bote</h2>
+  <p>Dois navios são criados em regiões encontradas como água profunda, usando a condição de terreno <code>height &lt; 0,34</code>.</p>
+  <p>Cada navio ocupa aproximadamente 7×3 tiles na marcação estrutural e possui baús fixos com pedra.</p>
+  <p>Baú do navio A: 16 pedras.</p>
+  <p>Baú do navio B: 12 pedras.</p>
+  <p>O bote é construído com 6 madeiras e pode ser colocado na água. Quando o jogador está sobre o bote e se move para outro tile de água, o bote acompanha a mudança de tile.</p>
+</section>
+
+<section id="conquistas">
+  <h2>25. Conquistas</h2>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>ID</th><th>Nome</th><th>XP</th><th>Pré-requisitos</th><th>Condição</th></tr></thead>
+    <tbody>
+      <tr><td>madeira</td><td>Madeira</td><td>5</td><td>—</td><td>Pegar a primeira madeira.</td></tr>
+      <tr><td>melhora</td><td>Melhora</td><td>5</td><td>madeira</td><td>Criar picareta ou machado de madeira.</td></tr>
+      <tr><td>minerador</td><td>Minerador</td><td>5</td><td>melhora</td><td>Pegar pedra com uma picareta.</td></tr>
+      <tr><td>salto</td><td>Salto de qualidade</td><td>10</td><td>melhora</td><td>Criar ferramenta de pedra.</td></tr>
+      <tr><td>organizado</td><td>Organizado</td><td>5</td><td>madeira</td><td>Criar baú e colocar algo nele.</td></tr>
+      <tr><td>madeireiro</td><td>Madeireiro</td><td>10</td><td>madeira</td><td>Juntar 32 madeiras.</td></tr>
+      <tr><td>explorador</td><td>Explorador</td><td>20</td><td>—</td><td>Encontrar uma estrutura.</td></tr>
+      <tr><td>social</td><td>Social</td><td>20</td><td>—</td><td>Falar com um aldeão.</td></tr>
+      <tr><td>sorte_grande</td><td>Sorte grande</td><td>30</td><td>explorador</td><td>Achar minério em um baú.</td></tr>
+      <tr><td>explorador_expert</td><td>Explorador especialista</td><td>80</td><td>explorador</td><td>Encontrar todas as estruturas.</td></tr>
+      <tr><td>cacador</td><td>Caçador</td><td>20</td><td>—</td><td>Derrotar um monstro.</td></tr>
+      <tr><td>vassoura</td><td>Passando a vassoura</td><td>100</td><td>cacador</td><td>Limpar uma masmorra.</td></tr>
+      <tr><td>mina_limpa</td><td>Abandonar mina</td><td>120</td><td>cacador</td><td>Limpar uma mina.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="hardcore">
+  <h2>26. Hardcore</h2>
+  <p>O modo hardcore altera regras importantes:</p>
+  <ul>
+    <li>o dano recebido é duplicado;</li>
+    <li>o mundo mostra apenas o chunk atual;</li>
+    <li>quando o jogador morre, o mundo é apagado do armazenamento local.</li>
+  </ul>
+  <p>Mensagem de morte: “Modo hardcore: este mundo será apagado.”</p>
+</section>
+
+<section id="salvamento">
+  <h2>27. Salvamento, exportação e importação</h2>
+  <p>Os mundos locais usam <code>localStorage</code>. O índice usa:</p>
+  <pre>seedlands_index_v1</pre>
+  <p>e os dados individuais usam o prefixo:</p>
+  <pre>seedlands_room_v1_</pre>
+  <p>O salvamento serializa a seed, posição do jogador, HP, fome, inventário, hotbar, quests, chunks visitados, objetos colocados, árvores/pedras/minérios persistidos, animais vivos e inimigos vivos.</p>
+  <p>O mapa pode ser exportado e importado pela interface.</p>
+</section>
+
+<section id="multiplayer">
+  <h2>28. Multiplayer</h2>
+  <p>O código possui uma camada de multiplayer com salas, chat e sincronização de alterações. A interface atual informa “As 5 salas do servidor.”</p>
+  <p>O endereço de backend declarado no cliente é <code>denselandsbackend.onrender.com</code>.</p>
+  <p>Existem opções para criar conta, entrar, usar nome de jogador, senha e conectar a salas.</p>
+  <p>A documentação aqui descreve apenas o que o cliente atual deixa explícito; o comportamento do servidor pode depender da implementação externa do backend.</p>
+</section>
+
+<section id="comandos">
+  <h2>29. Comandos</h2>
+  <p>Os comandos ficam disponíveis quando cheats são ativados.</p>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Comando</th><th>Função</th><th>Exemplo</th></tr></thead>
+    <tbody>
+      <tr><td>/hp</td><td>Define HP do jogador; se não houver valor, usa o HP máximo.</td><td>/hp 20</td></tr>
+      <tr><td>/give</td><td>Entrega item e quantidade.</td><td>/give madeira 32</td></tr>
+      <tr><td>/spawn</td><td>Cria um inimigo próximo no modo offline.</td><td>/spawn esqueleto</td></tr>
+      <tr><td>/struct</td><td>Seleciona/rastreia a estrutura mais próxima.</td><td>/struct</td></tr>
+      <tr><td>/time</td><td>Altera o tempo; aceita “dia”, “noite” ou número.</td><td>/time noite</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="probabilidades">
+  <h2>30. Probabilidades e fórmulas</h2>
+  <p>Esta seção separa <strong>probabilidades reais escritas por limiar no código</strong> de estimativas dependentes de ruído/condições.</p>
+  <h3>30.1 Como ler uma condição</h3>
+  <p>Para um valor aproximadamente uniforme em [0,1):</p>
+  <pre>random &gt; 0,72 → 28%
+random &gt; 0,50 → 50%
+random &gt; 0,35 → 65%
+random &gt; 0,86 → 14%</pre>
+  <h3>30.2 Portais de masmorra</h3>
+  <p>Tipo: 40% simples, 35% dupla, 25% complexa.</p>
+  <p>Dificuldade: 34% fácil, 36% média, 30% difícil.</p>
+  <p>Como as duas decisões são feitas com hashes separadas, a aproximação de combinação seria produto. Por exemplo, uma masmorra difícil e complexa teria aproximadamente 25% × 30% = <strong>7,5%</strong>.</p>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Combinação</th><th>Probabilidade aproximada</th></tr></thead>
+    <tbody>
+      <tr><td>Simples + fácil</td><td>13,6%</td></tr>
+      <tr><td>Simples + média</td><td>14,4%</td></tr>
+      <tr><td>Simples + difícil</td><td>12,0%</td></tr>
+      <tr><td>Dupla + fácil</td><td>11,9%</td></tr>
+      <tr><td>Dupla + média</td><td>12,6%</td></tr>
+      <tr><td>Dupla + difícil</td><td>10,5%</td></tr>
+      <tr><td>Complexa + fácil</td><td>8,5%</td></tr>
+      <tr><td>Complexa + média</td><td>9,0%</td></tr>
+      <tr><td>Complexa + difícil</td><td>7,5%</td></tr>
+    </tbody>
+  </table>
+  <h3>30.3 Minério no filão</h3>
+  <p>Em cada posição interna elegível do filão, há 62% de chance de minério porque <code>hash &gt; 0,38</code>.</p>
+  <p>Dentro desses 62%:</p>
+  <pre>ouro: 18%
+ferro: 34%
+cobre: 48%</pre>
+  <p>Logo, por posição elegível:</p>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Resultado</th><th>Chance aproximada</th></tr></thead>
+    <tbody>
+      <tr><td>Ouro bruto</td><td>62% × 18% = 11,16%</td></tr>
+      <tr><td>Ferro bruto</td><td>62% × 34% = 21,08%</td></tr>
+      <tr><td>Cobre bruto</td><td>62% × 48% = 29,76%</td></tr>
+      <tr><td>Pedra</td><td>38%</td></tr>
+    </tbody>
+  </table>
+  <h3>30.4 Mina</h3>
+  <p>Conforme detalhado na seção de minas:</p>
+  <pre>minério = 14%
+pedra = 24%
+tocha = 4%
+nada = 58%</pre>
+  <p>Entre os minérios: 25% ouro, 30% ferro e 45% cobre.</p>
+  <h3>30.5 Spawn noturno</h3>
+  <p>Ao entrar na noite, o código tenta criar:</p>
+  <pre>4 + floor(random × 3)</pre>
+  <p>Portanto o número tentado é 4, 5 ou 6, com aproximadamente 1/3 para cada valor antes das falhas causadas por tiles bloqueados ou vila segura.</p>
+  <h3>30.6 Cartógrafa</h3>
+  <p>O mapa da mina fica disponível em 65% dos NPCs/cartógrafas, e o mapa do navio em 38%, usando os limiares definidos no código.</p>
+  <h3>30.7 Peixe</h3>
+  <p>Não existe uma chance de “fisgar” implementada no trecho atual: ao completar o timer de pesca, 1 peixe cru é concedido. O elemento aleatório é apenas o tempo de espera entre 2,2 e 4,0 s.</p>
+</section>
+
+<section id="quirks">
+  <h2>31. Comportamentos importantes da implementação atual</h2>
+  <p>Esta seção é propositalmente diferente de uma wiki “ideal”: ela registra peculiaridades do código atual que um jogador ou desenvolvedor pode encontrar.</p>
+  <h3>31.1 O esqueleto noturno é sobrescrito</h3>
+  <p>Na função de spawn noturno, existe primeiro um teste que pode transformar o inimigo em esqueleto, mas logo depois o código atribui novamente <code>kind</code> como “olho” ou “lobo”. Portanto, na implementação atual, esse teste anterior não consegue manter o esqueleto como resultado final daquele spawn.</p>
+  <p>Resultado prático: a chance de esqueleto que parece existir naquele trecho é anulada pela atribuição seguinte.</p>
+  <h3>31.2 A tabela de receitas possui uma tocha duplicada</h3>
+  <p>A receita da tocha aparece duas vezes na lista da bancada.</p>
+  <h3>31.3 “Mapa” e aliases antigos</h3>
+  <p>Existem aliases de itens legados, como <code>machado</code>, <code>picareta</code>, <code>espada</code> e <code>mesa</code>, que apontam para IDs atuais.</p>
+  <h3>31.4 Probabilidade do mundo não é sempre uma probabilidade analítica simples</h3>
+  <p>Árvores e várias estruturas dependem de FBM, hashes espaciais, busca por terreno válido, bordas de chunks e exclusões do spawn. Nesses casos, um percentual obtido de um único limiar não deve ser tratado como a frequência final observada no mapa inteiro.</p>
+  <h3>31.5 Persistência é híbrida</h3>
+  <p>A seed gera o mundo novamente, mas o estado alterado pelo jogador é salvo por chunk visitado. Portanto “seed igual” não significa necessariamente “save idêntico” depois que o jogador construiu, minerou ou matou entidades.</p>
+</section>
+
+<section id="tecnico">
+  <h2>32. Referência técnica</h2>
+  <table border="1" cellpadding="4" cellspacing="0">
+    <thead><tr><th>Constante</th><th>Valor</th><th>Uso</th></tr></thead>
+    <tbody>
+      <tr><td>TILE</td><td>40</td><td>Escala do tile.</td></tr>
+      <tr><td>CHUNK</td><td>16</td><td>Lado do chunk em tiles.</td></tr>
+      <tr><td>DAY_LEN</td><td>600</td><td>Duração lógica do ciclo.</td></tr>
+      <tr><td>BAG_N</td><td>4</td><td>Slots da mochila.</td></tr>
+      <tr><td>HOT_N</td><td>4</td><td>Slots da hotbar.</td></tr>
+      <tr><td>STACK</td><td>32</td><td>Máximo normal por stack.</td></tr>
+      <tr><td>SAVE_INDEX</td><td>seedlands_index_v1</td><td>Índice de mundos.</td></tr>
+      <tr><td>SAVE_PREFIX</td><td>seedlands_room_v1_</td><td>Prefixo de persistência.</td></tr>
+    </tbody>
+  </table>
+  <h3>IDs de categorias de receita</h3>
+  <ul>
+    <li><strong>ferramentas:</strong> porrete, lança, arco, vara e ferramentas/armas de madeira, pedra, cobre e ferro.</li>
+    <li><strong>construção:</strong> blocos, bancada, forno, baús, cama, bote, porta e placa.</li>
+    <li><strong>utilitários:</strong> linha, flecha e tocha.</li>
+  </ul>
+</section>
+
+<section id="glossario">
+  <h2>33. Glossário</h2>
+  <dl>
+    <dt><strong>Seed</strong></dt>
+    <dd>Valor usado para reconstruir o mundo proceduralmente.</dd>
+    <dt><strong>Chunk</strong></dt>
+    <dd>Região de 16×16 tiles carregada e salva separadamente.</dd>
+    <dt><strong>FBM</strong></dt>
+    <dd>Fractal Brownian Motion; combinação de várias camadas de ruído para formar o terreno.</dd>
+    <dt><strong>Hash espacial</strong></dt>
+    <dd>Função que transforma coordenadas e seed em valores determinísticos aparentando aleatoriedade.</dd>
+    <dt><strong>Hardcore</strong></dt>
+    <dd>Modo com dano dobrado, visão restrita e exclusão do mundo ao morrer.</dd>
+    <dt><strong>Filão</strong></dt>
+    <dd>Área especial de 5×5 associada a pedras e minérios.</dd>
+    <dt><strong>Dimensão</strong></dt>
+    <dd>Área interna especial usada por masmorras e minas.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>Notas da documentação</h2>
+  <p>Esta wiki documenta o comportamento observável na implementação usada como fonte. Onde um percentual foi calculado matematicamente, ele está marcado como “nominal”, “aproximado” ou “por posição elegível”. Isso é importante porque ruído, busca de terreno, colisão e outras condições podem alterar a frequência final observada durante uma partida.</p>
+  <p><a href="#topo">Voltar ao topo</a></p>
+</section>
+</main>
+
+<footer>
+  <hr>
+  <p><strong>DenseLands Wiki</strong> — documentação baseada no código atual do projeto.</p>
+</footer>
+
+<script>
+(function () {
+  const exact = {
+    "en-US": {
+      "DenseLands Wiki":"DenseLands Wiki",
+      "RPG de mundo aberto · seed · offline":"Open-world RPG · seed · offline",
+      "Documentação técnica e de gameplay baseada na implementação atual do jogo.":"Technical and gameplay documentation based on the game's current implementation.",
+      "Índice":"Contents",
+      "Sobre DenseLands":"About DenseLands",
+      "Objetivo e loop de jogo":"Goal and gameplay loop",
+      "Controles":"Controls",
+      "Mundo e geração procedural":"World and procedural generation",
+      "Seeds e determinismo":"Seeds and determinism",
+      "Estruturas e pontos de interesse":"Structures and points of interest",
+      "Chunks e carregamento do mundo":"Chunks and world loading",
+      "Tempo, dia e noite":"Time, day and night",
+      "Jogador: vida, fome e ar":"Player: health, hunger and air",
+      "Combate":"Combat",
+      "Inimigos":"Enemies",
+      "Animais":"Animals",
+      "Recursos":"Resources",
+      "Itens":"Items",
+      "Ferramentas e armas":"Tools and weapons",
+      "Crafting":"Crafting",
+      "Forno e culinária":"Furnace and cooking",
+      "Pesca":"Fishing",
+      "Inventário, hotbar e baús":"Inventory, hotbar and chests",
+      "Vila, NPCs, lojas e missão":"Village, NPCs, shops and quests",
+      "Mapas":"Maps",
+      "Masmorras":"Dungeons",
+      "Minas abandonadas":"Abandoned mines",
+      "Navios e bote":"Ships and raft",
+      "Conquistas":"Achievements",
+      "Hardcore":"Hardcore",
+      "Salvamento, exportação e importação":"Saving, export and import",
+      "Multiplayer":"Multiplayer",
+      "Comandos":"Commands",
+      "Probabilidades e fórmulas":"Probabilities and formulas",
+      "Comportamentos importantes da implementação atual":"Important behaviors of the current implementation",
+      "Referência técnica":"Technical reference",
+      "Glossário":"Glossary",
+      "Sobre DenseLands":"About DenseLands"
+    },
+    "es": {
+      "DenseLands Wiki":"Wiki de DenseLands",
+      "RPG de mundo aberto · seed · offline":"RPG de mundo abierto · seed · sin conexión",
+      "Documentação técnica e de gameplay baseada na implementação atual do jogo.":"Documentación técnica y de jugabilidad basada en la implementación actual del juego.",
+      "Índice":"Índice",
+      "Sobre DenseLands":"Sobre DenseLands",
+      "Objetivo e loop de jogo":"Objetivo y ciclo de juego",
+      "Controles":"Controles",
+      "Mundo e geração procedural":"Mundo y generación procedural",
+      "Seeds e determinismo":"Seeds y determinismo",
+      "Estruturas e pontos de interesse":"Estructuras y puntos de interés",
+      "Chunks e carregamento do mundo":"Chunks y carga del mundo",
+      "Tempo, dia e noite":"Tiempo, día y noche",
+      "Jogador: vida, fome e ar":"Jugador: vida, hambre y aire",
+      "Combate":"Combate",
+      "Inimigos":"Enemigos",
+      "Animais":"Animales",
+      "Recursos":"Recursos",
+      "Itens":"Objetos",
+      "Ferramentas e armas":"Herramientas y armas",
+      "Crafting":"Fabricación",
+      "Forno e culinária":"Horno y cocina",
+      "Pesca":"Pesca",
+      "Inventário, hotbar e baús":"Inventario, hotbar y cofres",
+      "Vila, NPCs, lojas e missão":"Aldea, NPC, tiendas y misiones",
+      "Mapas":"Mapas",
+      "Masmorras":"Mazmorras",
+      "Minas abandonadas":"Minas abandonadas",
+      "Navios e bote":"Barcos y bote",
+      "Conquistas":"Logros",
+      "Hardcore":"Hardcore",
+      "Salvamento, exportação e importação":"Guardado, exportación e importación",
+      "Multiplayer":"Multijugador",
+      "Comandos":"Comandos",
+      "Probabilidades e fórmulas":"Probabilidades y fórmulas",
+      "Comportamentos importantes da implementação atual":"Comportamientos importantes de la implementación actual",
+      "Referência técnica":"Referencia técnica",
+      "Glossário":"Glosario"
+    }
+  };
+
+  const terms = {
+    "en-US": [
+      ["Ação","Action"],["Teclado","Keyboard"],["Touch","Touch"],["Mover","Move"],["Atacar / usar ação ofensiva","Attack / offensive action"],["Interagir","Interact"],["Inventário","Inventory"],["Soltar item selecionado","Drop selected item"],["Seleção pelo toque","Touch selection"],["Pausa","Pause"],
+      ["Água","Water"],["Areia","Sand"],["Grama","Grass"],["Caminho","Path"],["Piso","Floor"],["Parede","Wall"],["Cama","Bed"],["Função","Function"],["Constante","Constant"],["Quantidade","Amount"],["Observação","Notes"],["Distâncias nominais em tiles a partir da origem","Nominal distances in tiles from the origin"],["Intervalo nominal","Nominal range"],
+      ["Vila","Village"],["Portais de masmorra","Dungeon portals"],["Navios","Ships"],["Casa","House"],["Filão","Ore vein"],["Minas abandonadas","Abandoned mines"],
+      ["Ferramentas","Tools"],["Construção","Building"],["Utilitários","Utilities"],["Craftável","Craftable"],["Falta algo","Missing something"],["Baú","Chest"],["Bancada","Workbench"],["Forno","Furnace"],
+      ["simples","simple"],["dupla","double"],["complexa","complex"],["fácil","easy"],["facil","easy"],["difícil","hard"],["dificil","hard"],
+      ["vida","health"],["fome","hunger"],["ar","air"],["ouro","gold"],["ouro bruto","raw gold"],["ferro bruto","raw iron"],["cobre bruto","raw copper"],["madeira","wood"],["pedra","stone"],["carvão","coal"],
+      ["Amanhecer","Dawn"],["Dia","Day"],["Entardecer","Dusk"],["Noite","Night"],["A semente está nascendo…","The seed is sprouting…"],["Você caiu","You fell"],["Acordar no início","Wake at the start"],["Voltar ao menu","Back to menu"],["A fome venceu.","Hunger won."],
+      ["Você criou:","You crafted:"],["Sua arma quebrou!","Your weapon broke!"],["Isso está cru. Asse no forno.","That's raw. Cook it in the furnace."],["Você come","You eat"],["Senha incorreta.","Wrong password."],["Senha incorreta","Wrong password"],["vazio","empty"],
+      ["O mundo é dividido em chunks de 16×16 tiles.","The world is divided into 16×16 tile chunks."],["Um chunk é gerado apenas quando necessário.","A chunk is generated only when needed."],["O mundo só guarda os pedaços em que você já pisou.","Only chunks you have visited are saved."],["Somente chunks visitados são salvos.","Only visited chunks are saved."],
+      ["A posição angular é uniforme","The angular position is uniform"],["A distância é escolhida uniformemente","The distance is chosen uniformly"],["não são garantias exatas","are not exact guarantees"],["tentativa","attempt"],["porque o jogo pode deslocar a posição","because the game may shift the position"],
+      ["A ideia central é que uma seed determina a forma do mundo.","The core idea is that a seed determines the shape of the world."],["Não existe um único “final” codificado como objetivo obrigatório.","There is no single coded 'ending' as a mandatory objective."],["O jogo funciona como sandbox","The game works as a sandbox"],["Loop típico:","Typical loop:"],["Explorar a região inicial.","Explore the starting region."],["Coletar madeira e pedra.","Collect wood and stone."],["Criar ferramentas iniciais.","Craft starter tools."],["Montar bancada, baús, forno e equipamentos melhores.","Build a workbench, chests, furnace, and better equipment."],["Encontrar vila, navios, minas, filão e portais de masmorra.","Find the village, ships, mines, ore vein, and dungeon portals."],["Conseguir minérios e ouro.","Obtain ores and gold."],["Derrotar inimigos e limpar estruturas.","Defeat enemies and clear structures."],["Comer, dormir, atravessar água e continuar explorando.","Eat, sleep, cross water, and keep exploring."]
+    ],
+    "es": [
+      ["Ação","Acción"],["Teclado","Teclado"],["Touch","Táctil"],["Mover","Mover"],["Atacar / usar ação ofensiva","Atacar / acción ofensiva"],["Interagir","Interactuar"],["Inventário","Inventario"],["Soltar item selecionado","Soltar objeto seleccionado"],["Seleção pelo toque","Selección táctil"],["Pausa","Pausa"],
+      ["Água","Agua"],["Areia","Arena"],["Grama","Hierba"],["Caminho","Camino"],["Piso","Suelo"],["Parede","Pared"],["Cama","Cama"],["Função","Función"],["Constante","Constante"],["Quantidade","Cantidad"],["Observação","Observación"],["Distâncias nominais em tiles a partir da origem","Distancias nominales en tiles desde el origen"],["Intervalo nominal","Intervalo nominal"],
+      ["Vila","Aldea"],["Portais de masmorra","Portales de mazmorra"],["Navios","Barcos"],["Casa","Casa"],["Filão","Filón"],["Minas abandonadas","Minas abandonadas"],
+      ["Ferramentas","Herramientas"],["Construção","Construcción"],["Utilitários","Utilidades"],["Craftável","Fabricable"],["Falta algo","Falta algo"],["Baú","Cofre"],["Bancada","Mesa de trabajo"],["Forno","Horno"],
+      ["simples","simple"],["dupla","doble"],["complexa","compleja"],["fácil","fácil"],["facil","fácil"],["difícil","difícil"],["dificil","difícil"],
+      ["vida","vida"],["fome","hambre"],["ar","aire"],["ouro","oro"],["ouro bruto","oro bruto"],["ferro bruto","hierro bruto"],["cobre bruto","cobre bruto"],["madeira","madera"],["pedra","piedra"],["carvão","carbón"],
+      ["Amanhecer","Amanecer"],["Dia","Día"],["Entardecer","Atardecer"],["Noite","Noche"],["A semente está nascendo…","La semilla está brotando…"],["Você caiu","Has caído"],["Acordar no início","Despertar al inicio"],["Voltar ao menu","Volver al menú"],["A fome venceu.","El hambre ganó."],
+      ["Você criou:","Has creado:"],["Sua arma quebrou!","¡Tu arma se rompió!"],["Isso está cru. Asse no forno.","Está crudo. Cocínalo en el horno."],["Você come","Comes"],["Senha incorreta.","Contraseña incorrecta."],["Senha incorreta","Contraseña incorrecta"],["vazio","vacío"],
+      ["O mundo é dividido em chunks de 16×16 tiles.","El mundo está dividido en chunks de 16×16 casillas."],["Um chunk é gerado apenas quando necessário.","Un chunk se genera solo cuando es necesario."],["O mundo só guarda os pedaços em que você já pisou.","El mundo solo guarda los trozos que ya has visitado."],["Somente chunks visitados são salvos.","Solo se guardan los chunks visitados."],
+      ["A posição angular é uniforme","La posición angular es uniforme"],["A distância é escolhida uniformemente","La distancia se elige uniformemente"],["não são garantias exatas","no son garantías exactas"],["tentativa","intento"],["porque o jogo pode deslocar a posição","porque el juego puede desplazar la posición"],
+      ["A ideia central é que uma seed determina a forma do mundo.","La idea central es que una seed determina la forma del mundo."],["Não existe um único “final” codificado como objetivo obrigatório.","No existe un único 'final' codificado como objetivo obligatorio."],["O jogo funciona como sandbox","El juego funciona como sandbox"],["Loop típico:","Ciclo típico:"],["Explorar a região inicial.","Explorar la región inicial."],["Coletar madeira e pedra.","Recolectar madera y piedra."],["Criar ferramentas iniciais.","Fabricar herramientas iniciales."],["Montar bancada, baús, forno e equipamentos melhores.","Construir mesa de trabajo, cofres, horno y equipo mejor."],["Encontrar vila, navios, minas, filão e portais de masmorra.","Encontrar la aldea, barcos, minas, filón y portales de mazmorra."],["Conseguir minérios e ouro.","Conseguir minerales y oro."],["Derrotar inimigos e limpar estruturas.","Derrotar enemigos y limpiar estructuras."],["Comer, dormir, atravessar água e continuar explorando.","Comer, dormir, cruzar agua y seguir explorando."]
+    ]
+  };
+
+  function escapeRegExp(s){return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');}
+  function applyLanguage(lang){
+    document.documentElement.lang=lang;
+    const status=document.getElementById('lang-status');
+    if(status) status.textContent=lang;
+    document.querySelectorAll('main h1, main h2, main h3, main p, main li, main th, main td, main caption, header h1, header p, nav h2, nav li').forEach(el=>{
+      if(el.children.length && el.tagName==='TD') return;
+      const current=el.textContent.replace(/\s+/g,' ').trim();
+      if(!el.dataset.pt) el.dataset.pt=current;
+      let out=el.dataset.pt;
+      if(lang!=='pt-BR'){
+        if(exact[lang] && exact[lang][out]) out=exact[lang][out];
+        const pairs=terms[lang]||[];
+        for(const [a,b] of pairs){
+          if(out===a){out=b; continue;}
+          out=out.replace(new RegExp(escapeRegExp(a),'g'),b);
+        }
+      }
+      el.textContent=out;
+    });
+    document.querySelectorAll('[data-lang]').forEach(b=>b.disabled=b.dataset.lang===lang);
+    try{localStorage.setItem('denselands_wiki_lang',lang);}catch(e){}
+  }
+  document.querySelectorAll('#idiomas button').forEach(b=>b.addEventListener('click',()=>applyLanguage(b.dataset.lang)));
+  let initial='pt-BR';
+  try{initial=localStorage.getItem('denselands_wiki_lang')||'pt-BR';}catch(e){}
+  if(!['pt-BR','en-US','es'].includes(initial)) initial='pt-BR';
+  applyLanguage(initial);
+})();
+</script>
 </body>
 </html>
