@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <title>DenseLands</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
   <style>
 :root {
   --ink: #1b2430;
@@ -694,8 +696,6 @@ input, select {
 #home-player { text-align: center; margin-bottom: 8px; }
 
   </style>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div id="app">
@@ -1034,7 +1034,7 @@ input, select {
     <div id="drag-ghost" class="hidden"></div>
   </div>
 
-  <script>
+    <script>
 (() => {
   "use strict";
 
@@ -1269,6 +1269,7 @@ input, select {
     capacete_bronze: { name: "Capacete de bronze", stack: 1, armor: "helm", def: 2 },
     peitoral_ferro: { name: "Peitoral de ferro", stack: 1, armor: "chest", def: 4 },
     capacete_ferro: { name: "Capacete de ferro", stack: 1, armor: "helm", def: 3 },
+    cachecol: { name: "Cachecol", stack: 1, armor: "helm", def: 0, light: true },
     bancada: { name: "Bancada", stack: STACK, solid: true, hp: 5 },
     cama: { name: "Cama", stack: STACK, solid: true, hp: 6 },
     carne_crua: { name: "Carne crua", stack: STACK },
@@ -1312,6 +1313,7 @@ input, select {
     { id: "capacete_bronze", need: { couro: 2, cobre: 4 } },
     { id: "peitoral_ferro", need: { couro: 4, ferro: 5 } },
     { id: "capacete_ferro", need: { couro: 2, ferro: 4 } },
+    { id: "cachecol", need: { la: 2 } },
     { id: "lanca", need: { madeira: 6, pedra: 2 } },
     { id: "machado_pedra", need: { madeira: 4, pedra: 3 } },
     { id: "picareta_pedra", need: { madeira: 3, pedra: 4 } },
@@ -1423,6 +1425,18 @@ input, select {
     if (h < 0.42) return TILES.WATER;
     if (h < 0.47) return TILES.SAND;
     return TILES.GRASS;
+  }
+  function biomeAt(tx, ty, seed) {
+    seed = seed == null ? (state.room && state.room.seed) || 1 : seed;
+    if (!isLandH(heightAt(tx, ty, seed))) return "ocean";
+    const moist = fbm(tx * 0.011, ty * 0.011, seed + 41);
+    const heat = fbm(tx * 0.008 + 28, ty * 0.008, seed + 77);
+    if (moist > 0.60 && heat > 0.46) return "jungle";
+    if (moist > 0.52) return "forest";
+    return "plains";
+  }
+  function biomeLabel(b) {
+    return b === "jungle" ? "Selva" : b === "forest" ? "Floresta densa" : b === "ocean" ? "Mar" : "Planície";
   }
 
   // ---------- DOM ----------
@@ -1536,34 +1550,119 @@ input, select {
     return findDeepWaterNear(seed, tx, ty, 80);
   }
 
-  function setupLandmarks(seed) {
-    state.village = buildVillage(placeLandmark(seed, 11, 58, 110), seed);
-    state.portals = [];
-    for (let i = 0; i < 5; i++) {
-      const pos = placeLandmark(seed, 28 + i * 19, 48 + i * 10, 95 + i * 14);
-      const typeRoll = hash2(pos.x, pos.y, seed + 3);
-      const diffRoll = hash2(pos.x, pos.y, seed + 9);
-      const type = typeRoll < 0.4 ? "simples" : typeRoll < 0.75 ? "dupla" : "complexa";
-      const diff = diffRoll < 0.34 ? "facil" : diffRoll < 0.7 ? "medio" : "dificil";
-      state.portals.push({ x: pos.x - 1, y: pos.y - 1, w: 3, h: 3, type, diff });
+  function findBiomeNear(seed, want, cx, cy, maxR) {
+    for (let r = 0; r <= maxR; r++) {
+      for (let dx = -r; dx <= r; dx++) {
+        const spots = [
+          { x: cx + dx, y: cy - r }, { x: cx + dx, y: cy + r },
+          { x: cx - r, y: cy + dx }, { x: cx + r, y: cy + dx },
+        ];
+        for (const s of spots) {
+          if (biomeAt(s.x, s.y, seed) === want && isLandH(heightAt(s.x, s.y, seed))) return s;
+        }
+      }
     }
-    state.dungeon = state.portals[0];
-    const shipA = placeWaterLandmark(seed, 41, 55, 130);
-    const shipB = placeWaterLandmark(seed, 103, 70, 160);
+    return findLandNear(seed, cx, cy, maxR);
+  }
+
+  function addPortalAt(pos, seed, forced) {
+    const bio = biomeAt(pos.x, pos.y, seed);
+    let typeRoll = hash2(pos.x, pos.y, seed + 3);
+    if (forced === "jungle" || bio === "jungle") typeRoll = Math.max(typeRoll, 0.76);
+    const diffRoll = hash2(pos.x, pos.y, seed + 9);
+    const type = typeRoll < 0.4 ? "simples" : typeRoll < 0.75 ? "dupla" : "complexa";
+    const diff = diffRoll < 0.34 ? "facil" : diffRoll < 0.7 ? "medio" : "dificil";
+    const p = { x: pos.x - 1, y: pos.y - 1, w: 3, h: 3, type, diff, rich: bio === "jungle" };
+    state.portals = state.portals || [];
+    if (!state.portals.some((d) => d.x === p.x && d.y === p.y)) state.portals.push(p);
+    if (!state.dungeon) state.dungeon = p;
+    return p;
+  }
+  function addMineAt(pos, rich) {
+    const m = { x: pos.x - 1, y: pos.y - 1, w: 3, h: 3, kind: "mina", rich: !!rich };
+    state.mines = state.mines || [];
+    if (!state.mines.some((d) => d.x === m.x && d.y === m.y)) state.mines.push(m);
+    return m;
+  }
+  function addWizardAt(pos, seed) {
+    const w = {
+      x: pos.x - 2, y: pos.y - 2, w: 6, h: 5,
+      npc: {
+        name: ["Orin", "Vela", "Nim", "Sael", "Koro"][(hash2(pos.x, pos.y, seed) * 5) | 0],
+        job: "Mago", shop: "wizard", talk: "Troco saberes por ouro e lã.",
+        color: "#7a4ac8",
+        x: (pos.x + 0.5) * TILE, y: (pos.y + 1.5) * TILE,
+        wx: pos.x, wy: pos.y + 2, wait: 0,
+      },
+    };
+    state.wizards = state.wizards || [];
+    if (!state.wizards.some((d) => d.x === w.x && d.y === w.y)) state.wizards.push(w);
+    return w;
+  }
+  function considerChunkStruct(cx, cy) {
+    const seed = state.room.seed;
+    const tx = cx * CHUNK + 8, ty = cy * CHUNK + 8;
+    const bio = biomeAt(tx, ty, seed);
+    if (bio === "ocean") return;
+    const roll = hash2(cx, cy, seed + 301);
+    if (roll < 0.905) return;
+    const pos = findLandNear(seed, tx, ty, 10);
+    if (bio === "plains") {
+      if (hash2(cx, 1, seed + 5) > 0.52) {
+        if (!(state.villages || []).some((v) => Math.hypot(v.ox - pos.x, v.oy - pos.y) < 24)) {
+          const v = buildVillage(pos, seed);
+          state.villages = state.villages || [];
+          state.villages.push(v);
+          if (!state.village) state.village = v;
+        }
+      } else addMineAt(pos, false);
+    } else if (bio === "forest") {
+      if (hash2(cx, 2, seed + 6) > 0.48) addPortalAt(pos, seed, "forest");
+      else addWizardAt(pos, seed);
+    } else {
+      const r = hash2(cx, 3, seed + 7);
+      if (r > 0.64) addPortalAt(pos, seed, "jungle");
+      else if (r > 0.32) addMineAt(pos, true);
+      else addWizardAt(pos, seed);
+    }
+  }
+  function harvestStructsAround(cx, cy) {
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) considerChunkStruct(cx + dx, cy + dy);
+  }
+
+  function setupLandmarks(seed) {
+    state.village = null;
+    state.villages = [];
+    state.portals = [];
+    state.mines = [];
+    state.wizards = [];
+    state.dungeon = null;
+    const shipA = placeWaterLandmark(seed, 41, 70, 180);
+    const shipB = placeWaterLandmark(seed, 103, 90, 220);
     state.ships = [
       { x: shipA.x - 3, y: shipA.y - 1, w: 7, h: 3 },
       { x: shipB.x - 3, y: shipB.y - 1, w: 7, h: 3 },
     ];
     state.ship = state.ships[0];
-    const house = placeLandmark(seed, 53, 32, 78);
+    const house = findBiomeNear(seed, "plains", 20, -10, 90);
     state.house = { x: house.x - 2, y: house.y - 2, w: 4, h: 3 };
-    const vein = placeLandmark(seed, 67, 22, 55);
+    const vein = findLandNear(seed, -18, 22, 80);
     state.vein = { x: vein.x - 2, y: vein.y - 2, w: 5, h: 5 };
-    state.mines = [];
-    for (let i = 0; i < 3; i++) {
-      const pos = placeLandmark(seed, 81 + i * 13, 40 + i * 12, 88 + i * 16);
-      state.mines.push({ x: pos.x - 1, y: pos.y - 1, w: 3, h: 3, kind: "mina" });
+    // primeiras estruturas: varre um anel e deixa o resto nascer nos chunks
+    harvestStructsAround(0, 0);
+    harvestStructsAround(3, -1);
+    harvestStructsAround(-2, 4);
+    harvestStructsAround(1, 6);
+    harvestStructsAround(-5, -3);
+    if (!state.village) {
+      const p = findBiomeNear(seed, "plains", 12, 8, 120);
+      state.village = buildVillage(p, seed);
+      state.villages.push(state.village);
     }
+    if (!state.portals.length) addPortalAt(findBiomeNear(seed, "forest", -14, 16, 130), seed, "forest");
+    if (!state.mines.length) addMineAt(findBiomeNear(seed, "plains", 18, -20, 130), false);
+    if (!state.wizards.length) addWizardAt(findBiomeNear(seed, "forest", -22, -8, 140), seed);
+    state.dungeon = state.portals[0] || state.dungeon;
   }
 
   function buildVillage(origin, seed) {
@@ -1627,18 +1726,20 @@ input, select {
     const key = chunkKey(cx, cy);
     if (state.chunks.has(key)) return state.chunks.get(key);
     const seed = state.room.seed;
+    harvestStructsAround(cx, cy);
     const tiles = [];
     const trees = [];
     const rocks = [];
     const ores = [];
     const animals = [];
+    const villages = (state.villages && state.villages.length) ? state.villages : (state.village ? [state.village] : []);
     for (let ly = 0; ly < CHUNK; ly++) {
       for (let lx = 0; lx < CHUNK; lx++) {
         const tx = cx * CHUNK + lx;
         const ty = cy * CHUNK + ly;
         let t = tileFromH(heightAt(tx, ty, seed));
-        const v = state.village;
-        if (v && inVillageTile(tx, ty, v)) {
+        let v = villages.find((vv) => inVillageTile(tx, ty, vv));
+        if (v) {
           const b = buildingAt(tx, ty, v);
           if (b) {
             const door = ty === b.y + b.h - 1 && tx === b.x + 1;
@@ -1666,6 +1767,15 @@ input, select {
             else t = TILES.PATH;
           }
         }
+        for (const wz of (state.wizards || [])) {
+          if (tx >= wz.x && tx < wz.x + wz.w && ty >= wz.y && ty < wz.y + wz.h) {
+            const door = ty === wz.y + wz.h - 1 && tx === wz.x + 2;
+            const edge = tx === wz.x || ty === wz.y || tx === wz.x + wz.w - 1 || ty === wz.y + wz.h - 1;
+            if (door) t = TILES.PATH;
+            else if (edge) t = TILES.FLOOR;
+            else t = TILES.FLOOR;
+          }
+        }
         const hs = state.house;
         if (hs && tx >= hs.x && tx < hs.x + hs.w && ty >= hs.y && ty < hs.y + hs.h) {
           const door = ty === hs.y + hs.h - 1 && tx === hs.x + 1;
@@ -1688,11 +1798,17 @@ input, select {
             rocks.push({ tx, ty, hp: 6 });
           }
         } else if (t === TILES.GRASS) {
-          const forest = fbm(tx * 0.09, ty * 0.09, seed + 99);
-          if (forest > 0.58 && hash2(tx, ty, seed + 21) > 0.72) {
-            trees.push({ tx, ty, hp: 3 });
-          } else if (hash2(tx, ty, seed + 44) > 0.965) {
-            rocks.push({ tx, ty, hp: 4 });
+          const bio = biomeAt(tx, ty, seed);
+          const treeCut = bio === "jungle" ? 0.48 : bio === "forest" ? 0.58 : 0.88;
+          const rockCut = bio === "jungle" ? 0.90 : bio === "plains" ? 0.978 : 0.97;
+          const oreCut = bio === "jungle" ? 0.955 : 0.992;
+          if (hash2(tx, ty, seed + 21) > treeCut) {
+            trees.push({ tx, ty, hp: bio === "jungle" ? 5 : 4 });
+          } else if (hash2(tx, ty, seed + 44) > rockCut) {
+            rocks.push({ tx, ty, hp: bio === "jungle" ? 6 : 4 });
+          } else if (hash2(tx, ty, seed + 70) > oreCut) {
+            const roll = hash2(tx, ty, seed + 71);
+            ores.push({ tx, ty, id: roll > 0.7 ? "ferro_bruto" : roll > 0.4 ? "cobre_bruto" : "ouro_bruto", hp: 8 });
           }
         }
       }
@@ -1738,8 +1854,28 @@ input, select {
     if (state.house) {
       putChest(state.house.x + 2, state.house.y + 1, "madeira", 10);
     }
-    if (state.village) {
-      for (const b of state.village.buildings) {
+    for (const wz of (state.wizards || [])) {
+      for (let ty = wz.y; ty < wz.y + wz.h; ty++) {
+        for (let tx = wz.x; tx < wz.x + wz.w; tx++) {
+          if (tx < ch.cx * CHUNK || tx >= (ch.cx + 1) * CHUNK || ty < ch.cy * CHUNK || ty >= (ch.cy + 1) * CHUNK) continue;
+          const door = ty === wz.y + wz.h - 1 && tx === wz.x + 2;
+          const edge = tx === wz.x || ty === wz.y || tx === wz.x + wz.w - 1 || ty === wz.y + wz.h - 1;
+          if (door) continue;
+          if (edge && !(ch.placed || []).some((p) => p.tx === tx && p.ty === ty)) {
+            ch.placed.push({ tx, ty, id: "bloco_madeira", hp: 5 });
+          }
+        }
+      }
+      const ctx = wz.x + 3, cty = wz.y + 2;
+      if (ctx >= ch.cx * CHUNK && ctx < (ch.cx + 1) * CHUNK && cty >= ch.cy * CHUNK && cty < (ch.cy + 1) * CHUNK) {
+        if (!(ch.placed || []).some((p) => p.tx === ctx && p.ty === cty)) {
+          ch.placed.push({ tx: ctx, ty: cty, id: "tocha", hp: 2 });
+        }
+      }
+    }
+    const allV = (state.villages && state.villages.length) ? state.villages : (state.village ? [state.village] : []);
+    for (const vv of allV) {
+      for (const b of vv.buildings) {
         const tx = b.x + 2, ty = b.y + 1;
         if (tx >= ch.cx * CHUNK && tx < (ch.cx + 1) * CHUNK && ty >= ch.cy * CHUNK && ty < (ch.cy + 1) * CHUNK) {
           if (!(ch.placed || []).some((p) => p.tx === tx && p.ty === ty)) {
@@ -1884,8 +2020,9 @@ input, select {
     floor.forEach((c, i) => {
       if (i < 8) return;
       const roll = rnd(R);
-      const oreBoost = (equippedSkill() && equippedSkill().ore) ? 0.06 * equippedSkill().ore : 0;
-      if (roll > 0.86 - oreBoost) {
+      const rich = !!(portal && portal.rich);
+      const oreBoost = ((equippedSkill() && equippedSkill().ore) ? 0.06 * equippedSkill().ore : 0) + (rich ? 0.12 : 0);
+      if (roll > (rich ? 0.72 : 0.86) - oreBoost) {
         const oid = rnd(R) > 0.75 ? "ouro_bruto" : rnd(R) > 0.45 ? "ferro_bruto" : "cobre_bruto";
         ores.push({ tx: c.x, ty: c.y, id: oid, hp: 8 });
       } else if (roll > 0.62) rocks.push({ tx: c.x, ty: c.y, hp: 6 });
@@ -1899,10 +2036,27 @@ input, select {
     const spawn = { x: 4 * TILE + 20, y: (h - 3) * TILE + 20 };
     return { kind: "mine", w, h, tiles, placed, enemies, rocks, ores, spawn, portal, spawnT: 0, exit: { tx: 4, ty: h - 3 } };
   }
+  function clearDimSpawn(dim) {
+    if (!dim || !dim.spawn) return;
+    const tx = Math.floor(dim.spawn.x / TILE);
+    const ty = Math.floor(dim.spawn.y / TILE);
+    const wipe = (x, y) => {
+      if (x <= 0 || y <= 0 || x >= dim.w - 1 || y >= dim.h - 1) return;
+      dim.tiles[y * dim.w + x] = TILES.FLOOR;
+      dim.placed = (dim.placed || []).filter((p) => !(p.tx === x && p.ty === y));
+      dim.rocks = (dim.rocks || []).filter((p) => !(p.tx === x && p.ty === y));
+      dim.ores = (dim.ores || []).filter((p) => !(p.tx === x && p.ty === y));
+      dim.enemies = (dim.enemies || []).filter((e) => !(Math.floor(e.x / TILE) === x && Math.floor(e.y / TILE) === y));
+    };
+    for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) wipe(tx + dx, ty + dy);
+    dim.tiles[ty * dim.w + tx] = TILES.PATH;
+    if (dim.exit) wipe(dim.exit.tx, dim.exit.ty);
+  }
   function enterMine(portal) {
     persist();
     state.overPos = { x: state.player.x, y: state.player.y };
     state.dim = buildMine(portal);
+    clearDimSpawn(state.dim);
     state.player.x = state.dim.spawn.x;
     state.player.y = state.dim.spawn.y;
     state.cam.x = state.player.x;
@@ -1913,6 +2067,7 @@ input, select {
     persist();
     state.overPos = { x: state.player.x, y: state.player.y };
     state.dim = buildDungeon(portal);
+    clearDimSpawn(state.dim);
     state.player.x = state.dim.spawn.x;
     state.player.y = state.dim.spawn.y;
     state.cam.x = state.player.x;
@@ -2317,7 +2472,7 @@ input, select {
     prof.found[kind] = true;
     saveProfile(prof);
     grantAch("explorador");
-    const need = ["village", "dungeon", "mine", "ship", "house", "vein"];
+    const need = ["village", "dungeon", "mine", "ship", "house", "vein", "wizard"];
     if (need.every((k) => prof.found[k])) grantAch("explorador_expert");
   }
   function updateAccountHud() {
@@ -2388,6 +2543,19 @@ input, select {
     c.beginPath(); c.arc(x, y - 8, 8, Math.PI, 0); c.fill();
     c.fillStyle = hair;
     c.fillRect(x - 8, y - 8, 16, 5);
+    const helm = (state.player && state.player.helm) || opt.helm;
+    if (helm && helm.id === "cachecol") {
+      c.strokeStyle = "#c44536";
+      c.lineWidth = 3;
+      c.beginPath(); c.arc(x, y + 5, 9, 0.15, Math.PI - 0.15); c.stroke();
+      c.fillStyle = "#e07070";
+      c.fillRect(x + 6, y + 6, 4, 10);
+      c.fillStyle = "#c44536";
+      c.fillRect(x + 6, y + 15, 4, 3);
+    } else if (helm && ITEM[helm.id] && ITEM[helm.id].armor === "helm") {
+      c.fillStyle = ITEM[helm.id].color || (String(helm.id).indexOf("ferro")>=0 ? "#9aa4b2" : String(helm.id).indexOf("bronze")>=0 ? "#c47a3a" : "#8a5a32");
+      c.beginPath(); c.arc(x, y - 6, 9, Math.PI, 0); c.fill();
+    }
     const dx = opt.dirx || 0, dy = opt.diry || 1;
     c.strokeStyle = (opt.weapon && opt.weapon.color) || "#fff";
     c.lineWidth = 3;
@@ -2438,7 +2606,9 @@ input, select {
 
   function wearingArmor() {
     const p = state.player;
-    return !!(p && (p.helm || p.chest));
+    if (!p) return false;
+    const heavy = (s) => s && ITEM[s.id] && ITEM[s.id].armor && !ITEM[s.id].light;
+    return heavy(p.helm) || heavy(p.chest);
   }
   function armorDef() {
     const p = state.player;
@@ -3303,6 +3473,9 @@ input, select {
     } else if (String(id).indexOf("peitoral") === 0) {
       g.fillStyle = (id.indexOf("ferro")>=0) ? "#9aa4b2" : (id.indexOf("bronze")>=0) ? "#c47a3a" : "#8a5a32";
       g.fillRect(8, 10, 16, 14); g.fillRect(6, 10, 4, 8); g.fillRect(22, 10, 4, 8);
+    } else if (id === "cachecol") {
+      g.fillStyle = "#c44536"; g.fillRect(6, 14, 20, 6);
+      g.fillStyle = "#e07070"; g.fillRect(22, 16, 4, 10);
     } else if (String(id).indexOf("capacete") === 0) {
       g.fillStyle = (id.indexOf("ferro")>=0) ? "#9aa4b2" : (id.indexOf("bronze")>=0) ? "#c47a3a" : "#8a5a32";
       g.beginPath(); g.arc(16, 16, 10, Math.PI, 0); g.fill(); g.fillRect(6, 16, 20, 6);
@@ -3565,7 +3738,11 @@ input, select {
     if (!state.player) return;
     $("gold-pill").textContent = t("gold", { n: countItem("ouro") });
     $("hint").textContent = state.hint;
-    if ($("clock-pill")) $("clock-pill").textContent = dayLabel();
+    if ($("clock-pill")) {
+      let lab = dayLabel();
+      if (state.player && state.room) lab += " · " + biomeLabel(biomeAt(Math.floor(state.player.x / TILE), Math.floor(state.player.y / TILE), state.room.seed));
+      $("clock-pill").textContent = lab;
+    }
     renderPips($("hp-pips"), Math.max(0, state.player.hp), state.player.maxHp || 20);
     renderPips($("hunger-pips"), Math.max(0, state.player.hunger || 0), state.player.maxHunger || 20);
     if ($("air-fill")) {
@@ -3840,6 +4017,8 @@ input, select {
       (state.ships || (state.ship ? [state.ship] : [])).forEach((sh, i) => pts.push(["navio" + (i + 1), sh.x, sh.y]));
       if (state.house) pts.push(["casa", state.house.x, state.house.y]);
       if (state.vein) pts.push(["filão", state.vein.x, state.vein.y]);
+      (state.wizards || []).forEach((w, i) => pts.push(["mago" + (i + 1), w.x, w.y]));
+      (state.villages || []).forEach((v, i) => pts.push(["vila" + (i + 1), v.ox, v.oy]));
       pts.sort((a, b) => Math.hypot(a[1] * TILE - p.x, a[2] * TILE - p.y) - Math.hypot(b[1] * TILE - p.x, b[2] * TILE - p.y));
       const n = pts[0];
       if (n) {
@@ -3986,6 +4165,27 @@ input, select {
           openNpc(npc);
         }, "+18 ouro");
       } else npc.talk = "Bom trabalho com as árvores.";
+    }
+    if (npc.shop === "wizard") {
+      const offers = Object.keys(SKILLS);
+      const pick = offers[(hash2(Math.floor(npc.x), Math.floor(npc.y), 3) * offers.length) | 0];
+      const pick2 = offers[(hash2(Math.floor(npc.x) + 9, Math.floor(npc.y), 5) * offers.length) | 0];
+      const buySkill = (sid, gold, wool) => {
+        if (countItem("ouro") < gold || countItem("la") < wool) return showMsg("Falta ouro ou lã.");
+        takeItem("ouro", gold); takeItem("la", wool);
+        const gem = { id: "unknown_skill", n: 1, skill: sid, revealed: true };
+        let put = false;
+        for (const row of [state.player.hot, state.player.bag]) {
+          const i = row.findIndex((x) => !x);
+          if (i >= 0) { row[i] = gem; put = true; break; }
+        }
+        if (!put) dropItem("unknown_skill", 1, state.player.x, state.player.y, false);
+        renderHotbar();
+        showMsg("O mago entrega: " + SKILLS[sid].name);
+        openNpc(npc);
+      };
+      row("unknown_skill", SKILLS[pick].name, () => buySkill(pick, 8 + SKILLS[pick].tier * 6, 1 + SKILLS[pick].tier), (8 + SKILLS[pick].tier * 6) + " ouro + lã");
+      row("unknown_skill", SKILLS[pick2].name, () => buySkill(pick2, 8 + SKILLS[pick2].tier * 6, 1 + SKILLS[pick2].tier), (8 + SKILLS[pick2].tier * 6) + " ouro + lã");
     }
     if (npc.shop === "map") {
       const luck = hash2(npc.tx || 0, npc.ty || 0, state.room.seed + 4);
@@ -4798,13 +4998,18 @@ input, select {
       else if (state.ship && Math.hypot(p.x - (state.ship.x + 3) * TILE, p.y - (state.ship.y + 1) * TILE) < 160) markFound("ship");
       if (state.house && Math.hypot(p.x - (state.house.x + 2) * TILE, p.y - (state.house.y + 1) * TILE) < 140) markFound("house");
       if (state.vein && Math.hypot(p.x - (state.vein.x + 2) * TILE, p.y - (state.vein.y + 2) * TILE) < 140) markFound("vein");
+      (state.wizards || []).forEach((w) => { if (Math.hypot(p.x - (w.x + 3) * TILE, p.y - (w.y + 2) * TILE) < 140) markFound("wizard"); });
+      (state.villages || []).forEach((v) => {
+        if (Math.hypot(p.x - (v.ox + v.w / 2) * TILE, p.y - (v.oy + v.h / 2) * TILE) < 220) markFound("village");
+      });
     }
-    if (state.village) {
-      for (const npc of state.village.npcs) {
+    const villages = (state.villages && state.villages.length) ? state.villages : (state.village ? [state.village] : []);
+    for (const vv of villages) {
+      for (const npc of vv.npcs) {
         npc.wait -= dt;
         if (npc.wait <= 0) {
-          npc.wx = state.village.ox + 1 + Math.random() * Math.max(1, state.village.w - 2);
-          npc.wy = state.village.oy + 1 + Math.random() * Math.max(1, state.village.h - 2);
+          npc.wx = vv.ox + 1 + Math.random() * Math.max(1, vv.w - 2);
+          npc.wy = vv.oy + 1 + Math.random() * Math.max(1, vv.h - 2);
           npc.wait = 1.4 + Math.random() * 2.4;
         }
         const txg = npc.wx * TILE, tyg = npc.wy * TILE;
@@ -4817,6 +5022,22 @@ input, select {
         if (!worldBlocked(npc.x, nny, 10)) npc.y = nny;
         if (Math.hypot(npc.x - p.x, npc.y - p.y) < 46) state.nearbyNpc = npc;
       }
+    }
+    for (const wz of (state.wizards || [])) {
+      const npc = wz.npc;
+      if (!npc) continue;
+      npc.wait = (npc.wait || 0) - dt;
+      if (npc.wait <= 0) {
+        npc.wx = wz.x + 1 + Math.random() * (wz.w - 2);
+        npc.wy = wz.y + wz.h;
+        npc.wait = 2 + Math.random() * 2;
+      }
+      const txg = (npc.wx || wz.x + 2) * TILE, tyg = (npc.wy || wz.y + wz.h) * TILE;
+      const ndx = txg - npc.x, ndy = tyg - npc.y;
+      const nl = Math.hypot(ndx, ndy) || 1;
+      npc.x += (ndx / nl) * 30 * dt;
+      npc.y += (ndy / nl) * 30 * dt;
+      if (Math.hypot(npc.x - p.x, npc.y - p.y) < 46) state.nearbyNpc = npc;
     }
     if (state.nearbyNpc) state.hint = "X / B · falar com " + state.nearbyNpc.name;
     else if (state.nearbyTable) state.hint = "X / B · usar a bancada";
@@ -4972,23 +5193,41 @@ input, select {
     }
 
     // village roofs labels + npcs
-    if (state.village && !state.dim) {
-      for (const b of state.village.buildings) {
-        const s = worldToScreen(b.x * TILE, b.y * TILE);
-        ctx.fillStyle = "rgba(80,40,30,0.35)";
-        ctx.fillRect(s.x - 2, s.y - 10, b.w * TILE + 4, 12);
+    if (!state.dim) {
+      const villages = (state.villages && state.villages.length) ? state.villages : (state.village ? [state.village] : []);
+      for (const vv of villages) {
+        for (const b of vv.buildings) {
+          const s = worldToScreen(b.x * TILE, b.y * TILE);
+          ctx.fillStyle = "rgba(80,40,30,0.35)";
+          ctx.fillRect(s.x - 2, s.y - 10, b.w * TILE + 4, 12);
+        }
+        for (const npc of vv.npcs) {
+          if (!tileVisible(Math.floor(npc.x / TILE), Math.floor(npc.y / TILE))) continue;
+          const s = worldToScreen(npc.x, npc.y);
+          ctx.fillStyle = "#1a120c";
+          ctx.beginPath(); ctx.ellipse(s.x, s.y + 8, 8, 4, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = npc.color;
+          ctx.beginPath(); ctx.arc(s.x, s.y, 10, 0, 7); ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 11px Nunito";
+          ctx.textAlign = "center";
+          ctx.fillText(npc.name, s.x, s.y - 16);
+        }
       }
-      for (const npc of state.village.npcs) {
-        if (!tileVisible(Math.floor(npc.x / TILE), Math.floor(npc.y / TILE))) continue;
-        const s = worldToScreen(npc.x, npc.y);
-        ctx.fillStyle = "#1a120c";
-        ctx.beginPath(); ctx.ellipse(s.x, s.y + 8, 8, 4, 0, 0, 7); ctx.fill();
-        ctx.fillStyle = npc.color;
-        ctx.beginPath(); ctx.arc(s.x, s.y, 10, 0, 7); ctx.fill();
-        ctx.fillStyle = "#fff";
-        ctx.font = "bold 11px Nunito";
-        ctx.textAlign = "center";
-        ctx.fillText(npc.name, s.x, s.y - 16);
+      for (const wz of (state.wizards || [])) {
+        if (wz.npc && tileVisible(Math.floor(wz.npc.x / TILE), Math.floor(wz.npc.y / TILE))) {
+          const s = worldToScreen(wz.npc.x, wz.npc.y);
+          ctx.fillStyle = "#1a120c";
+          ctx.beginPath(); ctx.ellipse(s.x, s.y + 8, 8, 4, 0, 0, 7); ctx.fill();
+          ctx.fillStyle = wz.npc.color || "#7a4ac8";
+          ctx.beginPath(); ctx.arc(s.x, s.y, 10, 0, 7); ctx.fill();
+          ctx.fillStyle = "#d8b8ff";
+          ctx.beginPath(); ctx.arc(s.x, s.y - 12, 6, Math.PI, 0); ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.font = "bold 11px Nunito";
+          ctx.textAlign = "center";
+          ctx.fillText(wz.npc.name, s.x, s.y - 18);
+        }
       }
     }
 
@@ -5166,7 +5405,12 @@ input, select {
       return;
     }
     if (tile === TILES.SAND) ctx.fillStyle = "#e6d2a2";
-    else if (tile === TILES.GRASS) ctx.fillStyle = ((tx + ty) & 1) ? "#4f8f45" : "#5b9a4c";
+    else if (tile === TILES.GRASS) {
+      const bio = state.room ? biomeAt(tx, ty, state.room.seed) : "plains";
+      if (bio === "jungle") ctx.fillStyle = ((tx + ty) & 1) ? "#2f7a38" : "#1e5a28";
+      else if (bio === "forest") ctx.fillStyle = ((tx + ty) & 1) ? "#3d7a3a" : "#2f6230";
+      else ctx.fillStyle = ((tx + ty) & 1) ? "#4f8f45" : "#5b9a4c";
+    }
     else if (tile === TILES.PATH) ctx.fillStyle = "#c4a06a";
     else if (tile === TILES.FLOOR) ctx.fillStyle = "#4a4558";
     else if (tile === TILES.BED) ctx.fillStyle = "#6b5344";
