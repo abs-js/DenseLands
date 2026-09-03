@@ -692,7 +692,8 @@ input, select {
   border-radius: 8px; padding: 8px; font: inherit;
 }
 #home-player { text-align: center; margin-bottom: 8px; }
-</style>
+
+  </style>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
 </head>
@@ -748,6 +749,9 @@ input, select {
         <div class="inv-left">
           <h3 data-i18n="inv.slots">8 espaços</h3>
           <div id="inv-slots" class="icon-grid"></div>
+          <h3>Skill e armadura</h3>
+          <div id="inv-special" class="icon-grid"></div>
+          <p class="pack-note">Uma skill só. Trocar apaga a antiga. Armadura impede nado e deixa mais lento.</p>
           <p class="pack-note" id="inv-note" data-i18n="inv.note">Arraste para mover. Q ou arraste para fora para soltar no chão.</p>
         </div>
         <div class="inv-right">
@@ -1011,6 +1015,14 @@ input, select {
       <input id="mp-in" maxlength="180" placeholder="Enter: chat  ·  /comando" />
     </div>
     <button id="btn-pause" class="round-btn hidden" type="button">☰</button>
+    <div id="skill-bench" class="panel pack hidden">
+      <div class="panel-head">
+        <h2>Bancada de skill</h2>
+        <button class="close-x" id="skill-bench-close" type="button">×</button>
+      </div>
+      <p class="pack-note">Pague ouro para revelar a habilidade escondida na Unknown skill.</p>
+      <div id="skill-bench-list"></div>
+    </div>
     <div id="sign-box" class="panel pack hidden">
       <div class="panel-head">
         <h2>Placa</h2>
@@ -1179,11 +1191,11 @@ input, select {
   const BAG_N = 4;
   const HOT_N = 4;
   const STACK = 32;
-  const PLACEABLE = new Set(["bloco_madeira", "bloco_pedra", "bote", "cama", "forno", "bau", "bau_grande", "bancada", "tocha", "porta", "placa"]);
+  const PLACEABLE = new Set(["bloco_madeira", "bloco_pedra", "bote", "cama", "forno", "bau", "bau_grande", "bancada", "tocha", "porta", "placa", "skill_bench"]);
   const MAP_IDS = new Set(["mapa", "mapa_masmorra", "mapa_mina", "mapa_navio"]);
   const RECIPE_CAT = {
     ferramentas: new Set(["porrete","lanca","arco","vara","machado_madeira","picareta_madeira","espada_madeira","machado_pedra","picareta_pedra","espada_pedra","machado_cobre","picareta_cobre","espada_cobre","machado_ferro","picareta_ferro","espada_ferro"]),
-    construcao: new Set(["bloco_madeira","bloco_pedra","bancada","forno","bau","bau_grande","cama","bote","porta","placa"]),
+    construcao: new Set(["bloco_madeira","bloco_pedra","bancada","forno","bau","bau_grande","cama","bote","porta","placa","skill_bench"]),
     utilitarios: new Set(["linha","flecha","tocha"]),
   };
   const WEAPONS = new Set([
@@ -1248,6 +1260,15 @@ input, select {
     bau_grande: { name: "Baú grande", stack: STACK, solid: true, hp: 10 },
     porta: { name: "Porta", stack: STACK, solid: true, hp: 6 },
     placa: { name: "Placa", stack: STACK, solid: false, hp: 3 },
+    skill_bench: { name: "Bancada de skill", stack: STACK, solid: true, hp: 8 },
+    unknown_skill: { name: "Unknown skill", stack: 1 },
+    couro: { name: "Couro", stack: STACK },
+    peitoral_couro: { name: "Peitoral de couro", stack: 1, armor: "chest", def: 2 },
+    capacete_couro: { name: "Capacete de couro", stack: 1, armor: "helm", def: 1 },
+    peitoral_bronze: { name: "Peitoral de bronze", stack: 1, armor: "chest", def: 3 },
+    capacete_bronze: { name: "Capacete de bronze", stack: 1, armor: "helm", def: 2 },
+    peitoral_ferro: { name: "Peitoral de ferro", stack: 1, armor: "chest", def: 4 },
+    capacete_ferro: { name: "Capacete de ferro", stack: 1, armor: "helm", def: 3 },
     bancada: { name: "Bancada", stack: STACK, solid: true, hp: 5 },
     cama: { name: "Cama", stack: STACK, solid: true, hp: 6 },
     carne_crua: { name: "Carne crua", stack: STACK },
@@ -1284,6 +1305,13 @@ input, select {
     { id: "bau_grande", need: { bau: 2 } },
     { id: "porta", need: { madeira: 6 } },
     { id: "placa", need: { madeira: 1 } },
+    { id: "skill_bench", need: { madeira: 4, ouro: 4 } },
+    { id: "peitoral_couro", need: { couro: 6 } },
+    { id: "capacete_couro", need: { couro: 4 } },
+    { id: "peitoral_bronze", need: { couro: 4, cobre: 5 } },
+    { id: "capacete_bronze", need: { couro: 2, cobre: 4 } },
+    { id: "peitoral_ferro", need: { couro: 4, ferro: 5 } },
+    { id: "capacete_ferro", need: { couro: 2, ferro: 4 } },
     { id: "lanca", need: { madeira: 6, pedra: 2 } },
     { id: "machado_pedra", need: { madeira: 4, pedra: 3 } },
     { id: "picareta_pedra", need: { madeira: 3, pedra: 4 } },
@@ -1295,6 +1323,22 @@ input, select {
     { id: "picareta_ferro", need: { madeira: 3, ferro: 5 } },
     { id: "espada_ferro", need: { madeira: 2, ferro: 6 } },
   ];
+
+  const SKILLS = {
+    madeireiro_1: { name: "Madeireiro I", group: "madeireiro", tier: 1, wood: 2, cost: 4 },
+    madeireiro_2: { name: "Madeireiro II", group: "madeireiro", tier: 2, wood: 3, cost: 8 },
+    madeireiro_3: { name: "Madeireiro III", group: "madeireiro", tier: 3, wood: 4, cost: 16 },
+    sortudo_1: { name: "Sortudo I", group: "sortudo", tier: 1, luck: 1, cost: 4 },
+    sortudo_2: { name: "Sortudo II", group: "sortudo", tier: 2, luck: 2, cost: 8 },
+    sortudo_3: { name: "Sortudo III", group: "sortudo", tier: 3, luck: 3, cost: 16 },
+    lutador_1: { name: "Lutador I", group: "lutador", tier: 1, sword: 1.2, cost: 4 },
+    lutador_2: { name: "Lutador II", group: "lutador", tier: 2, sword: 1.4, cost: 8 },
+    lutador_3: { name: "Lutador III", group: "lutador", tier: 3, sword: 1.65, area: 1, cost: 16 },
+    minerador_1: { name: "Minerador I", group: "minerador", tier: 1, ore: 2, cost: 4 },
+    minerador_2: { name: "Minerador II", group: "minerador", tier: 2, ore: 3, cost: 8 },
+    minerador_3: { name: "Minerador III", group: "minerador", tier: 3, ore: 4, cost: 16 },
+  };
+  const ARMOR_IDS = new Set(["peitoral_couro","capacete_couro","peitoral_bronze","capacete_bronze","peitoral_ferro","capacete_ferro"]);
 
   const ACH = {
     madeira: { name: "Madeira", xp: 5, need: [], desc: "Pegue a primeira madeira.", group: "basicas" },
@@ -1789,8 +1833,11 @@ input, select {
       if (type === "complexa" && rnd(R) > 0.45) return;
       const cx = r.x + 2, cy = r.y + 2;
       const nGold = Math.max(1, Math.round((2 + rnd(R) * 6) * mul));
-      const nOre = type === "simples" ? 0 : Math.round(rnd(R) * 3 * mul);
-      const items = [makeStack("ouro", nGold), nOre ? makeStack(rnd(R) > 0.5 ? "ferro_bruto" : "cobre_bruto", nOre) : null, null, null];
+      const luck = (equippedSkill() && equippedSkill().luck) || 0;
+      let nOre = type === "simples" ? 0 : Math.round(rnd(R) * 3 * mul);
+      if (luck && (type !== "simples" || rnd(R) < 0.18 * luck)) nOre = Math.max(nOre, luck) + (rnd(R) < 0.35 * luck ? luck : 0);
+      const items = [makeStack("ouro", nGold), nOre ? makeStack(rnd(R) > 0.5 ? "ferro_bruto" : "cobre_bruto", Math.max(1, nOre)) : null, null, null];
+      if (rnd(R) < 0.10 + luck * 0.04) items[2] = makeUnknownSkill(rnd(R));
       placed.push({ tx: cx, ty: cy, id: "bau", hp: 7, items });
     });
     rooms.forEach((r) => {
@@ -1837,12 +1884,18 @@ input, select {
     floor.forEach((c, i) => {
       if (i < 8) return;
       const roll = rnd(R);
-      if (roll > 0.86) {
+      const oreBoost = (equippedSkill() && equippedSkill().ore) ? 0.06 * equippedSkill().ore : 0;
+      if (roll > 0.86 - oreBoost) {
         const oid = rnd(R) > 0.75 ? "ouro_bruto" : rnd(R) > 0.45 ? "ferro_bruto" : "cobre_bruto";
         ores.push({ tx: c.x, ty: c.y, id: oid, hp: 8 });
       } else if (roll > 0.62) rocks.push({ tx: c.x, ty: c.y, hp: 6 });
       else if (roll > 0.58) placed.push({ tx: c.x, ty: c.y, id: "tocha", hp: 2 });
     });
+    const mid = floor[Math.floor(floor.length / 2)] || { x: 8, y: 8 };
+    const luck = (equippedSkill() && equippedSkill().luck) || 0;
+    const mineItems = [makeStack("pedra", 8 + luck * 2), luck ? makeStack("ferro_bruto", luck) : makeStack("carvao", 3), null, null];
+    if (rnd(R) < 0.16 + luck * 0.05) mineItems[2] = makeUnknownSkill(rnd(R));
+    placed.push({ tx: mid.x, ty: mid.y, id: "bau", hp: 7, items: mineItems });
     const spawn = { x: 4 * TILE + 20, y: (h - 3) * TILE + 20 };
     return { kind: "mine", w, h, tiles, placed, enemies, rocks, ores, spawn, portal, spawnT: 0, exit: { tx: 4, ty: h - 3 } };
   }
@@ -1943,6 +1996,7 @@ input, select {
       if (t === TILES.WATER) {
         if (onBoatTile(tx, ty) || onWoodDock(tx, ty) || (opt.boat && opt.fromBoat)) continue;
         if (state.room && state.room.hardcore) return true;
+        if (wearingArmor()) return true;
         continue;
       }
     }
@@ -2003,6 +2057,25 @@ input, select {
     };
   }
 
+  function tryGrowTree() {
+    if (state.dim) return;
+    const keys = [...state.visited];
+    if (!keys.length) return;
+    for (let n = 0; n < 6; n++) {
+      const key = keys[(Math.random() * keys.length) | 0];
+      const [cx, cy] = key.split(",").map(Number);
+      const ch = ensureChunk(cx, cy);
+      if ((ch.trees || []).length > 10) continue;
+      const tx = cx * CHUNK + (Math.random() * CHUNK | 0);
+      const ty = cy * CHUNK + (Math.random() * CHUNK | 0);
+      if (tileAt(tx, ty) !== TILES.GRASS) continue;
+      if (treeAt(tx, ty) || rockAt(tx, ty) || oreAt(tx, ty) || placedAt(tx, ty)) continue;
+      if (inSafeVillage && inSafeVillage(tx * TILE, ty * TILE)) continue;
+      ch.trees.push({ tx, ty, hp: 8 });
+      burst(tx * TILE + 20, ty * TILE + 8, "#6aa84f");
+      break;
+    }
+  }
   function trySpawnAnimal() {
     if (state.online) return;
     if (state.dim) return;
@@ -2343,6 +2416,9 @@ input, select {
       airT: 0,
       quests: { madeira10: "open" },
       facingLock: 0,
+      skill: null,
+      helm: null,
+      chest: null,
     };
   }
 
@@ -2358,6 +2434,37 @@ input, select {
     const p = state.player;
     if (!p || !p.hot) return null;
     return p.hot[state.hotSel] || null;
+  }
+
+  function wearingArmor() {
+    const p = state.player;
+    return !!(p && (p.helm || p.chest));
+  }
+  function armorDef() {
+    const p = state.player;
+    if (!p) return 0;
+    let d = 0;
+    if (p.helm && ITEM[p.helm.id]) d += ITEM[p.helm.id].def || 0;
+    if (p.chest && ITEM[p.chest.id]) d += ITEM[p.chest.id].def || 0;
+    return d;
+  }
+  function equippedSkill() {
+    const s = state.player && state.player.skill;
+    if (!s || !s.revealed || !s.skill) return null;
+    return SKILLS[s.skill] || null;
+  }
+  function rollSkillId(rndv) {
+    const ids = Object.keys(SKILLS);
+    return ids[Math.floor((rndv == null ? Math.random() : rndv) * ids.length) % ids.length];
+  }
+  function makeUnknownSkill(rndv) {
+    return { id: "unknown_skill", n: 1, skill: rollSkillId(rndv), revealed: false };
+  }
+  function skillLabel(s) {
+    if (!s) return "Skill";
+    if (s.id === "unknown_skill" && !s.revealed) return "Unknown skill";
+    const d = SKILLS[s.skill];
+    return (d && d.name) || "Skill";
   }
 
   function equippedWeapon() {
@@ -2571,6 +2678,7 @@ input, select {
         hp: state.player.hp,
         bag: state.player.bag, hot: state.player.hot, quests: state.player.quests,
         hunger: state.player.hunger,
+        skill: state.player.skill, helm: state.player.helm, chest: state.player.chest,
       },
       visited: [...state.visited],
       chunks,
@@ -2654,6 +2762,9 @@ input, select {
       hot: data.player.hot || migrateOldInv(data.player).hot,
       quests: data.player.quests || { madeira10: "open" },
       hunger: data.player.hunger != null ? data.player.hunger : 20,
+      skill: data.player.skill || null,
+      helm: data.player.helm || null,
+      chest: data.player.chest || null,
     });
     compactInv();
     state.cam.x = state.player.x;
@@ -3181,6 +3292,20 @@ input, select {
     } else if (id === "placa") {
       g.fillStyle = "#8b5a2b"; g.fillRect(14, 16, 4, 12);
       g.fillStyle = "#c48a4a"; g.fillRect(6, 6, 20, 12);
+    } else if (id === "unknown_skill") {
+      g.fillStyle = "#2a1840"; g.fillRect(6, 6, 20, 20);
+      g.fillStyle = "#c9a227"; g.beginPath(); g.arc(16, 16, 7, 0, 7); g.fill();
+    } else if (id === "skill_bench") {
+      g.fillStyle = "#3a2060"; g.fillRect(5, 12, 22, 8);
+      g.fillStyle = "#e0b44b"; g.fillRect(8, 8, 16, 6);
+    } else if (id === "couro") {
+      g.fillStyle = "#8a5a32"; g.beginPath(); g.ellipse(16, 17, 10, 8, 0, 0, 7); g.fill();
+    } else if (String(id).indexOf("peitoral") === 0) {
+      g.fillStyle = (id.indexOf("ferro")>=0) ? "#9aa4b2" : (id.indexOf("bronze")>=0) ? "#c47a3a" : "#8a5a32";
+      g.fillRect(8, 10, 16, 14); g.fillRect(6, 10, 4, 8); g.fillRect(22, 10, 4, 8);
+    } else if (String(id).indexOf("capacete") === 0) {
+      g.fillStyle = (id.indexOf("ferro")>=0) ? "#9aa4b2" : (id.indexOf("bronze")>=0) ? "#c47a3a" : "#8a5a32";
+      g.beginPath(); g.arc(16, 16, 10, Math.PI, 0); g.fill(); g.fillRect(6, 16, 20, 6);
     } else {
       g.fillStyle = "#888"; g.fillRect(8, 8, 16, 16);
     }
@@ -3342,7 +3467,8 @@ input, select {
     if (state.dead) return true;
     if (inSpawnGuard()) return false;
     state.hurtFlash = 0.42;
-    const dmg = state.room && state.room.hardcore ? amount * 2 : amount;
+    let dmg = state.room && state.room.hardcore ? amount * 2 : amount;
+    dmg = Math.max(1, dmg - armorDef());
     p.hp -= dmg;
     spawnFloat(p.x, p.y - 18, "-" + dmg, "#ffb0a8");
     if (p.hp <= 0) {
@@ -3464,6 +3590,20 @@ input, select {
       </button>`;
     }).join("");
     box.querySelectorAll("[data-row]").forEach((el) => bindInvSlot(el));
+    const spec = $("inv-special");
+    if (spec) {
+      const rows = [
+        { row: "skill", s: p.skill, lab: "Skill" },
+        { row: "helm", s: p.helm, lab: "Capacete" },
+        { row: "chest", s: p.chest, lab: "Peitoral" },
+      ];
+      spec.innerHTML = rows.map((c) => {
+        if (!c.s) return `<button type="button" class="icon-card empty" data-row="${c.row}" data-i="0">${c.lab}</button>`;
+        const name = c.row === "skill" ? skillLabel(c.s) : ((ITEM[c.s.id] && ITEM[c.s.id].name) || c.s.id);
+        return `<button type="button" class="icon-card" data-row="${c.row}" data-i="0"><img alt="" src="${itemIcon(c.s.id, 44)}">${name}<small>${c.lab}</small></button>`;
+      }).join("");
+      spec.querySelectorAll("[data-row]").forEach((el) => bindInvSlot(el));
+    }
     if ($("equipped")) $("equipped").innerHTML = "";
     const list = RECIPES.slice();
     if ($("recipes")) {
@@ -3559,12 +3699,39 @@ input, select {
     }
   }
 
+  function slotRef(row, i) {
+    const p = state.player;
+    if (row === "hot" || row === "bag") return { get: () => p[row][i], set: (v) => { p[row][i] = v; } };
+    if (row === "skill" || row === "helm" || row === "chest") return { get: () => p[row], set: (v) => { p[row] = v; } };
+    return null;
+  }
+  function canWear(row, s) {
+    if (!s) return true;
+    if (row === "skill") return s.id === "unknown_skill" && s.revealed;
+    if (row === "helm") return !!(ITEM[s.id] && ITEM[s.id].armor === "helm");
+    if (row === "chest") return !!(ITEM[s.id] && ITEM[s.id].armor === "chest");
+    return true;
+  }
   function swapSlots(aRow, ai, bRow, bi) {
     const p = state.player;
-    if (!p || !p[aRow] || !p[bRow]) return;
-    const tmp = p[aRow][ai];
-    p[aRow][ai] = p[bRow][bi];
-    p[bRow][bi] = tmp;
+    if (!p) return;
+    const A = slotRef(aRow, ai), B = slotRef(bRow, bi);
+    if (!A || !B) return;
+    const av = A.get(), bv = B.get();
+    if (av && !canWear(bRow, av)) return showMsg("Não encaixa nesse slot.");
+    if (bv && !canWear(aRow, bv) && bRow !== "skill") return showMsg("Não encaixa nesse slot.");
+    if (bRow === "skill" && bv && av) {
+      showMsg("A skill antiga se desfez.");
+      B.set(av);
+      A.set(null);
+    } else if (aRow === "skill" && av && bv) {
+      showMsg("A skill antiga se desfez.");
+      A.set(bv);
+      B.set(null);
+    } else {
+      A.set(bv);
+      B.set(av);
+    }
     renderInventory();
     renderHotbar();
   }
@@ -3701,6 +3868,48 @@ input, select {
   $("chest-close").onclick = () => { $("chest").classList.add("hidden"); state.openChest = null; };
   $("furn-close").onclick = () => $("furnace").classList.add("hidden");
   $("bench-close").onclick = () => $("bench").classList.add("hidden");
+  if ($("skill-bench-close")) $("skill-bench-close").onclick = () => $("skill-bench").classList.add("hidden");
+
+  function openSkillBench() {
+    $("inventory").classList.add("hidden");
+    $("bench").classList.add("hidden");
+    const box = $("skill-bench");
+    if (!box) return showMsg("Bancada de skill.");
+    box.classList.remove("hidden");
+    const list = [];
+    const p = state.player;
+    [["hot", p.hot], ["bag", p.bag]].forEach(([row, arr]) => {
+      (arr || []).forEach((s, i) => {
+        if (s && s.id === "unknown_skill") list.push({ row, i, s });
+      });
+    });
+    const dest = $("skill-bench-list");
+    if (!list.length) {
+      dest.innerHTML = "<p class='tiny'>Traga uma Unknown skill. Ela já tem uma habilidade escondida.</p>";
+      return;
+    }
+    dest.innerHTML = list.map((it, idx) => {
+      const def = SKILLS[it.s.skill];
+      const cost = (def && def.cost) || 4;
+      const lab = it.s.revealed ? skillLabel(it.s) : "Unknown skill · revelar " + cost + " ouro";
+      return `<button type="button" class="shop-row" data-sk="${idx}" ${it.s.revealed ? "disabled" : ""}>
+        <span class="shop-lab">${lab}</span><small>${cost} ouro</small></button>`;
+    }).join("");
+    dest.querySelectorAll("[data-sk]").forEach((b) => {
+      b.onclick = () => {
+        const it = list[Number(b.dataset.sk)];
+        const def = SKILLS[it.s.skill];
+        const cost = (def && def.cost) || 4;
+        if (it.s.revealed) return;
+        if (countItem("ouro") < cost) return showMsg("Falta ouro.");
+        takeItem("ouro", cost);
+        it.s.revealed = true;
+        showMsg("Skill revelada: " + skillLabel(it.s));
+        openSkillBench();
+        renderHotbar();
+      };
+    });
+  }
 
   function openBench() {
     $("inventory").classList.add("hidden");
@@ -3929,7 +4138,8 @@ input, select {
       if (tree.hp <= 0) {
         const ch = ensureChunk(Math.floor(tree.tx / CHUNK), Math.floor(tree.ty / CHUNK));
         ch.trees = ch.trees.filter((t) => t !== tree);
-        dropOrGive("madeira", 1, tree.tx, tree.ty);
+        const woodN = (equippedSkill() && equippedSkill().wood) || 1;
+        dropOrGive("madeira", woodN, tree.tx, tree.ty);
       }
       shareEdit({ kind: "tree", tx: tree.tx, ty: tree.ty, hp: tree.hp });
     }
@@ -3973,7 +4183,8 @@ input, select {
             const ch = ensureChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK));
             ch.ores = ch.ores.filter((t) => t !== ore);
           }
-          dropOrGive(ore.id, 1, tx, ty);
+          const oreN = (equippedSkill() && equippedSkill().ore) || 1;
+          dropOrGive(ore.id, oreN, tx, ty);
         } else spawnFloat(ax, ay, "tink", "#ffe08a");
         shareEdit({ kind: "ore", tx, ty, hp: ore.hp, id: ore.id });
         break;
@@ -3996,7 +4207,10 @@ input, select {
       }
     }
 
-    const reachHit = w.id === "arco" ? 118 : (info.area ? 66 : isSword(w) ? Math.round(46 * 1.33) : 46);
+    const sk = equippedSkill();
+    const swordMul = (isSword(w) && sk && sk.sword) ? sk.sword : 1;
+    const fighterArea = !!(sk && sk.area && isSword(w));
+    const reachHit = w.id === "arco" ? 118 : ((info.area || fighterArea) ? 66 : isSword(w) ? Math.round(46 * 1.33 * (fighterArea ? 1.2 : 1)) : 46);
     const needAlign = info.area ? -20 : 8;
     if (w.id === "arco") {
       if (countItem("flecha") <= 0) {
@@ -4013,13 +4227,15 @@ input, select {
       const dist = Math.hypot(dx, dy);
       const align = dx * p.dirx + dy * p.diry;
       if (dist < reachHit && align > needAlign) {
-        a.hp -= w.dmg;
+        a.hp -= Math.round(w.dmg * swordMul);
         a.hurt = 0.2;
-        spawnFloat(a.x, a.y - 16, "-" + w.dmg, "#ffd0a0");
+        spawnFloat(a.x, a.y - 16, "-" + Math.round(w.dmg * swordMul), "#ffd0a0");
         if (a.hp <= 0) {
           a.alive = false;
-          if (a.kind === "vaca") addItem("carne_crua", 2);
-          else addItem("la", 2);
+          if (a.kind === "vaca") {
+            addItem("carne_crua", 2);
+            if (Math.random() < 0.5) addItem("couro", 1);
+          } else addItem("la", 2);
         }
         shareEdit({ kind: "animal", aid: a.id, hp: a.hp, ax: a.x, ay: a.y, akind: a.kind });
       }
@@ -4031,9 +4247,9 @@ input, select {
       const dist = Math.hypot(dx, dy);
       const align = dx * p.dirx + dy * p.diry;
       if (dist < reachHit && align > needAlign) {
-        e.hp -= w.dmg;
+        e.hp -= Math.round(w.dmg * swordMul);
         e.hurt = 0.2;
-        spawnFloat(e.x, e.y - 16, "-" + w.dmg, "#ff8a7a");
+        spawnFloat(e.x, e.y - 16, "-" + Math.round(w.dmg * swordMul), "#ff8a7a");
         burst(e.x, e.y, "#d06050");
         if (e.hp <= 0) {
           e.alive = false;
@@ -4099,6 +4315,10 @@ input, select {
     }
     if (state.nearbyTable) {
       openBench();
+      return;
+    }
+    if (state.nearbySkillBench) {
+      openSkillBench();
       return;
     }
     if (state.nearbyFurnace) {
@@ -4271,6 +4491,7 @@ input, select {
   }
 
   function sleepInBed() {
+    if (!isNight()) return showMsg("Só dá para dormir à noite.");
     const near = allEnemies().some((e) => e.alive && e.night && Math.hypot(e.x - state.player.x, e.y - state.player.y) < 80);
     if (near) return showMsg("Há monstros perto demais para dormir.");
     const c = cyclePos();
@@ -4279,11 +4500,10 @@ input, select {
     if (add < 0.05) add = 0.08;
     state.time += add * DAY_LEN;
     state.player.hp = state.player.maxHp;
-    state.player.hunger = Math.min(state.player.maxHunger, (state.player.hunger || 0) + 6);
     state.nightMobs.forEach((e) => { e.alive = false; });
     state.nightMobs = [];
     state.wasNight = false;
-    showMsg("Você dorme e acorda de manhã, descansado.");
+    showMsg("Você dorme e acorda de manhã.");
     updateHud();
   }
 
@@ -4380,6 +4600,7 @@ input, select {
       !$("chest").classList.contains("hidden") ||
       !$("furnace").classList.contains("hidden") ||
       !$("bench").classList.contains("hidden") ||
+      ($("skill-bench") && !$("skill-bench").classList.contains("hidden")) ||
       state.dead ||
       ($("death") && !$("death").classList.contains("hidden"));
     if (paused) return;
@@ -4398,6 +4619,11 @@ input, select {
     if (state.animalT > 7) {
       state.animalT = 0;
       trySpawnAnimal();
+    }
+    state.treeT = (state.treeT || 0) + dt;
+    if (state.treeT > 16) {
+      state.treeT = 0;
+      tryGrowTree();
     }
 
     if (state.fishing) {
@@ -4436,7 +4662,8 @@ input, select {
     if ($("air-fill")) $("air-fill").style.width = Math.max(0, p.air || 0) / 20 * 100 + "%";
 
     const { ix, iy, moving } = inputVector();
-    const spd = wet ? 88 : 145;
+    let spd = wet ? 88 : 145;
+    if (wearingArmor()) spd *= 0.82;
     if (moving) {
       p.dirx = ix; p.diry = iy;
       const len = Math.hypot(p.dirx, p.diry) || 1;
@@ -4534,6 +4761,7 @@ input, select {
     state.nearbyNode = null;
     state.nearbyBed = false;
     state.nearbyTable = false;
+    state.nearbySkillBench = false;
     state.nearbyFurnace = false;
     state.nearbyChest = null;
     state.nearbyDoor = null;
@@ -4549,6 +4777,7 @@ input, select {
     if (tileAt(tx, ty) === TILES.BED || tileAt(standTx, standTy) === TILES.BED) state.nearbyBed = true;
     const nearPl = placedAt(tx, ty) || placedAt(standTx, standTy);
     if (nearPl && nearPl.id === "bancada") state.nearbyTable = true;
+    if (nearPl && nearPl.id === "skill_bench") state.nearbySkillBench = true;
     if (nearPl && nearPl.id === "forno") state.nearbyFurnace = true;
     if (nearPl && (nearPl.id === "bau" || nearPl.id === "bau_grande")) state.nearbyChest = nearPl;
     if (nearPl && nearPl.id === "porta") state.nearbyDoor = nearPl;
@@ -4591,6 +4820,7 @@ input, select {
     }
     if (state.nearbyNpc) state.hint = "X / B · falar com " + state.nearbyNpc.name;
     else if (state.nearbyTable) state.hint = "X / B · usar a bancada";
+    else if (state.nearbySkillBench) state.hint = "X / B · bancada de skill";
     else if (state.nearbyFurnace) state.hint = "X / B · usar o forno";
     else if (state.nearbyChest) state.hint = "X / B · abrir o baú";
     else if (state.nearbyDoor) state.hint = state.nearbyDoor.open ? "X / B · fechar a porta" : "X / B · abrir a porta";
@@ -5029,6 +5259,13 @@ input, select {
       ctx.fillRect(x - 14, y - 14, 28, 16);
       return;
     }
+    if (pl.id === "skill_bench") {
+      ctx.fillStyle = "#3a2060";
+      ctx.fillRect(x - 16, y - 6, 32, 16);
+      ctx.fillStyle = "#e0b44b";
+      ctx.fillRect(x - 10, y - 12, 20, 8);
+      return;
+    }
     if (pl.id === "tocha") {
       ctx.fillStyle = "#6b4423";
       ctx.fillRect(x - 2, y - 2, 4, 14);
@@ -5352,6 +5589,7 @@ input, select {
   if (!hasAccount()) showPane("menu-account");
   else showHome();
 })();
-</script>
+
+  </script>
 </body>
 </html>
