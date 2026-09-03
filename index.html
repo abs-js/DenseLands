@@ -71,42 +71,44 @@ html, body, #app {
   align-items: center;
   gap: 8px;
 }
-#hp-bar {
-  width: 140px;
-  height: 12px;
-  background: #2a1515;
-  border: 1px solid #000;
-  border-radius: 6px;
-  overflow: hidden;
-}
-#hp-fill {
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(#e05a4a, #b83028);
-}
-#hp-text { font-size: 12px; font-weight: 800; }
 #hunger-wrap {
   position: absolute;
   left: 12px;
-  top: 68px;
+  top: 70px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
-#hunger-bar {
-  width: 140px;
-  height: 10px;
-  background: #2a2010;
-  border: 1px solid #000;
-  border-radius: 6px;
+.pips {
+  display: flex;
+  gap: 4px;
+}
+.pip {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #0c1016;
+  box-shadow: inset 0 -2px 0 rgba(0,0,0,0.25);
+  background: #2a2018;
+  position: relative;
   overflow: hidden;
 }
-#hunger-fill {
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(#e0b44b, #b8862a);
+.pips.hp .pip.on { background: radial-gradient(circle at 35% 30%, #ff8a7a, #c44536); }
+.pips.hp .pip.half::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 50%;
+  background: radial-gradient(circle at 35% 30%, #ff8a7a, #c44536);
 }
-#hunger-text { font-size: 12px; font-weight: 800; }
+.pips.hunger .pip.on { background: radial-gradient(circle at 35% 30%, #f0d070, #c47a3a); }
+.pips.hunger .pip.half::after {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 50%;
+  background: radial-gradient(circle at 35% 30%, #f0d070, #c47a3a);
+}
 #air-wrap {
   position: absolute;
   left: 12px;
@@ -382,6 +384,38 @@ label.check input { width: auto; }
 .icon-card { position: relative; }
 .icon-card .hpmini { position: static; margin-top: 4px; }
 .icon-card.empty { opacity: 0.45; cursor: default; min-height: 72px; }
+.icon-card.lift { opacity: 0.35; }
+#drag-ghost {
+  position: fixed;
+  z-index: 80;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+  border: 2px solid #e0b44b;
+  border-radius: 10px;
+  background: #2a1a10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.45);
+}
+#drag-ghost img { width: 40px; height: 40px; image-rendering: pixelated; }
+#look-preview {
+  display: block;
+  margin: 0 auto 10px;
+  width: 120px;
+  height: 120px;
+  background: #15202a;
+  border: 2px solid #000;
+  border-radius: 12px;
+  image-rendering: pixelated;
+}
+.swatches { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 12px; }
+.swatch {
+  width: 28px; height: 28px; border-radius: 50%;
+  border: 2px solid #000; cursor: pointer;
+}
+.swatch.on { box-shadow: 0 0 0 2px #e0b44b; }
 
 @media (max-width: 560px) {
   #hotbar { bottom: 168px; }
@@ -643,8 +677,22 @@ input, select {
   #mp-log { height: 44px; font-size: 11px; }
   #topbar { padding-right: 210px; }
 }
-
-  </style>
+#ach-tree { display: flex; flex-direction: column; gap: 6px; max-height: 46vh; overflow: auto; margin: 8px 0; }
+.ach-card {
+  background: #1a2430; border: 1px solid #000; border-radius: 10px;
+  padding: 8px 10px; font-size: 13px;
+}
+.ach-card.on { border-color: #e0b44b; background: #243018; }
+.ach-card.lock { opacity: 0.45; }
+.ach-card b { display: block; }
+.ach-card.rare b { color: #c9a227; }
+#sign-text {
+  width: 100%; min-height: 72px; margin: 8px 0;
+  background: #1a140c; color: #f3e2c4; border: 1px solid #000;
+  border-radius: 8px; padding: 8px; font: inherit;
+}
+#home-player { text-align: center; margin-bottom: 8px; }
+</style>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet" />
 </head>
@@ -659,14 +707,13 @@ input, select {
         <div class="pill" id="seed-pill">Seed</div>
         <div class="pill gold" id="gold-pill">0 ouro</div>
         <div class="pill" id="clock-pill">Manhã</div>
+        <div class="pill" id="lvl-pill">Lv 1</div>
       </div>
       <div id="hp-wrap">
-        <div id="hp-bar"><div id="hp-fill"></div></div>
-        <span id="hp-text">20/20</span>
+        <div id="hp-pips" class="pips hp"></div>
       </div>
       <div id="hunger-wrap">
-        <div id="hunger-bar"><div id="hunger-fill"></div></div>
-        <span id="hunger-text">20/20</span>
+        <div id="hunger-pips" class="pips hunger"></div>
       </div>
       <div id="air-wrap" class="hidden">
         <div id="air-bar"><div id="air-fill"></div></div>
@@ -704,17 +751,8 @@ input, select {
           <p class="pack-note" id="inv-note" data-i18n="inv.note">Arraste para mover. Q ou arraste para fora para soltar no chão.</p>
         </div>
         <div class="inv-right">
-          <div class="craft-tabs" id="craft-tabs">
-            <button type="button" data-tab="todos" class="on" data-i18n="tab.all">Todos</button>
-            <button type="button" data-tab="ferramentas" data-i18n="tab.tools">Ferramentas</button>
-            <button type="button" data-tab="construcao" data-i18n="tab.build">Construção</button>
-            <button type="button" data-tab="utilitarios" data-i18n="tab.util">Utilitários</button>
-          </div>
-          <div class="craft-tabs" id="craft-filter">
-            <button type="button" data-filt="todos" class="on" data-i18n="filt.all">Todos</button>
-            <button type="button" data-filt="ok" data-i18n="filt.ok">Craftável</button>
-            <button type="button" data-filt="falta" data-i18n="filt.miss">Falta algo</button>
-          </div>
+          <h3>Craft rápido</h3>
+          <p class="pack-note">Só madeira e bancada. O resto nasce na bancada colocada.</p>
           <div id="recipes" class="icon-grid"></div>
         </div>
       </div>
@@ -791,22 +829,71 @@ input, select {
           <h1>DenseLands</h1>
           <p data-i18n="menu.tag">RPG de mundo aberto · seed · offline</p>
         </div>
-        <div class="lang-row">
-          <label data-i18n="menu.lang">Idioma</label>
-          <select id="lang-select">
-            <option value="pt-BR">Português</option>
-            <option value="en-US">English</option>
-            <option value="es">Español</option>
-          </select>
-          <button type="button" class="mini-btn" id="btn-fs-menu" data-i18n="menu.fullscreen">Tela cheia</button>
+
+        <div id="menu-account" class="hidden">
+          <h2>Sua conta</h2>
+          <p class="tiny">Crie um nome antes de jogar. Offline guarda neste aparelho; online tenta o servidor.</p>
+          <label>Usuário <input id="acc-user" maxlength="16" placeholder="3-16 letras" /></label>
+          <label>Senha <input id="acc-pass" type="password" maxlength="32" placeholder="mín. 4" /></label>
+          <p class="tiny" id="acc-status"></p>
+          <button class="big-btn" id="acc-create" type="button">Criar conta</button>
+          <button class="big-btn ghost" id="acc-login" type="button">Já tenho conta</button>
         </div>
 
-        <div id="menu-home">
-          <button class="big-btn" id="btn-online" type="button">Jogar online</button>
-          <button class="big-btn" id="btn-create" type="button" data-i18n="menu.create">Criar sala</button>
-          <button class="big-btn ghost" id="btn-load" type="button" data-i18n="menu.load">Carregar sala</button>
-          <button class="big-btn ghost" id="btn-import" type="button" data-i18n="menu.import">Importar mapa</button>
+        <div id="menu-home" class="hidden">
+          <p class="tiny" id="home-player"></p>
+          <button class="big-btn" id="btn-play" type="button">Jogar</button>
+          <button class="big-btn ghost" id="btn-ach" type="button">Conquistas</button>
+          <button class="big-btn ghost" id="btn-settings" type="button">Configurações</button>
+          <button class="big-btn ghost" id="btn-look" type="button">Personagem</button>
+        </div>
+
+        <div id="menu-ach" class="hidden">
+          <h2>Conquistas</h2>
+          <p class="tiny" id="ach-xp-line">Lv 1 · 0 XP</p>
+          <div id="ach-tree"></div>
+          <button class="big-btn ghost" id="ach-back" type="button">Voltar</button>
+        </div>
+
+        <div id="menu-play" class="hidden">
+          <button class="big-btn" id="btn-online" type="button">Online</button>
+          <button class="big-btn ghost" id="btn-offline" type="button">Offline</button>
+          <button class="big-btn ghost" id="play-back" type="button">Voltar</button>
+        </div>
+
+        <div id="menu-offline" class="hidden">
+          <button class="big-btn" id="btn-load" type="button">Mundos</button>
+          <button class="big-btn ghost" id="btn-create" type="button">Novo mundo</button>
+          <button class="big-btn ghost" id="btn-import" type="button">Importar mapa</button>
           <input id="import-file" type="file" accept="application/json" hidden />
+          <button class="big-btn ghost" id="offline-back" type="button">Voltar</button>
+          <p class="tiny" data-i18n="menu.offline">Mundos offline ficam neste aparelho. Dá para exportar o mapa de dentro do jogo.</p>
+        </div>
+
+        <div id="menu-settings" class="hidden">
+          <div class="lang-row">
+            <label data-i18n="menu.lang">Idioma</label>
+            <select id="lang-select">
+              <option value="pt-BR">Português</option>
+              <option value="en-US">English</option>
+              <option value="es">Español</option>
+            </select>
+          </div>
+          <button type="button" class="big-btn ghost" id="btn-fs-menu" data-i18n="menu.fullscreen">Tela cheia</button>
+          <p class="tiny">O visual do boneco fica em Personagem. O servidor online é denselandsbackend.onrender.com.</p>
+          <button class="big-btn ghost" id="settings-back" type="button">Voltar</button>
+        </div>
+
+        <div id="menu-look" class="hidden">
+          <canvas id="look-preview" width="160" height="160"></canvas>
+          <p class="pack-note">Assim os outros te veem no online. Salvo neste aparelho.</p>
+          <label>Pele</label>
+          <div class="swatches" id="sw-skin"></div>
+          <label>Camisa</label>
+          <div class="swatches" id="sw-shirt"></div>
+          <label>Cabelo</label>
+          <div class="swatches" id="sw-hair"></div>
+          <button class="big-btn ghost" id="look-back" type="button">Voltar</button>
         </div>
 
         <form id="form-create" class="hidden">
@@ -839,6 +926,10 @@ input, select {
               <button type="button" class="preset" data-seed="7437">Navio perto<br><small>7437</small></button>
               <button type="button" class="preset" data-seed="2351">Ilha deserta<br><small>2351</small></button>
               <button type="button" class="preset" data-seed="7089">Dungeon perto<br><small>7089</small></button>
+              <button type="button" class="preset" data-seed="-926">Praia<br><small>-926</small></button>
+              <button type="button" class="preset" data-seed="-5799">Tudo perto<br><small>-5799</small></button>
+              <button type="button" class="preset" data-seed="-9521">Dois navios<br><small>-9521</small></button>
+              <button type="button" class="preset" data-seed="-11087">Dungeon quase spawn<br><small>-11087</small></button>
             </div>
           </div>
           <label class="check">
@@ -861,7 +952,7 @@ input, select {
         </div>
 
         <div id="menu-online" class="hidden">
-          <label>Servidor(não sabe não mexe, se estiver vazio escreve exatamente isso)
+          <label>Servidor
             <input id="mp-host" placeholder="denselandsbackend.onrender.com" />
           </label>
           <label>Usuário <input id="mp-user" maxlength="16" /></label>
@@ -897,6 +988,7 @@ input, select {
       <button class="big-btn" id="btn-export" type="button" data-i18n="pause.export">Exportar mapa</button>
       <button class="big-btn ghost" id="btn-save" type="button" data-i18n="pause.save">Salvar agora</button>
       <button class="big-btn ghost" id="btn-fs" type="button" data-i18n="menu.fullscreen">Tela cheia</button>
+      <button class="big-btn ghost" id="btn-pause-ach" type="button">Conquistas</button>
       <button class="big-btn ghost" id="btn-menu" type="button" data-i18n="pause.menu">Sair para o menu</button>
       <p class="tiny" data-i18n="pause.note">O mundo só guarda os pedaços em que você já pisou. A seed regenera o resto.</p>
     </div>
@@ -919,6 +1011,15 @@ input, select {
       <input id="mp-in" maxlength="180" placeholder="Enter: chat  ·  /comando" />
     </div>
     <button id="btn-pause" class="round-btn hidden" type="button">☰</button>
+    <div id="sign-box" class="panel pack hidden">
+      <div class="panel-head">
+        <h2>Placa</h2>
+        <button class="close-x" id="sign-close" type="button">×</button>
+      </div>
+      <textarea id="sign-text" maxlength="80" rows="3" placeholder="Escreva até 80 letras"></textarea>
+      <button class="big-btn" id="sign-save" type="button">Gravar</button>
+    </div>
+    <div id="drag-ghost" class="hidden"></div>
   </div>
 
   <script>
@@ -1078,11 +1179,11 @@ input, select {
   const BAG_N = 4;
   const HOT_N = 4;
   const STACK = 32;
-  const PLACEABLE = new Set(["bloco_madeira", "bloco_pedra", "bote", "cama", "forno", "bau", "bancada", "tocha"]);
+  const PLACEABLE = new Set(["bloco_madeira", "bloco_pedra", "bote", "cama", "forno", "bau", "bau_grande", "bancada", "tocha", "porta", "placa"]);
   const MAP_IDS = new Set(["mapa", "mapa_masmorra", "mapa_mina", "mapa_navio"]);
   const RECIPE_CAT = {
     ferramentas: new Set(["porrete","lanca","arco","vara","machado_madeira","picareta_madeira","espada_madeira","machado_pedra","picareta_pedra","espada_pedra","machado_cobre","picareta_cobre","espada_cobre","machado_ferro","picareta_ferro","espada_ferro"]),
-    construcao: new Set(["bloco_madeira","bloco_pedra","bancada","forno","bau","cama","bote"]),
+    construcao: new Set(["bloco_madeira","bloco_pedra","bancada","forno","bau","bau_grande","cama","bote","porta","placa"]),
     utilitarios: new Set(["linha","flecha","tocha"]),
   };
   const WEAPONS = new Set([
@@ -1144,6 +1245,9 @@ input, select {
     flecha: { name: "Flecha", stack: STACK },
     forno: { name: "Forno", stack: STACK, solid: true, hp: 10 },
     bau: { name: "Baú", stack: STACK, solid: true, hp: 7 },
+    bau_grande: { name: "Baú grande", stack: STACK, solid: true, hp: 10 },
+    porta: { name: "Porta", stack: STACK, solid: true, hp: 6 },
+    placa: { name: "Placa", stack: STACK, solid: false, hp: 3 },
     bancada: { name: "Bancada", stack: STACK, solid: true, hp: 5 },
     cama: { name: "Cama", stack: STACK, solid: true, hp: 6 },
     carne_crua: { name: "Carne crua", stack: STACK },
@@ -1162,12 +1266,12 @@ input, select {
     { id: "machado_madeira", need: { madeira: 6 } },
     { id: "picareta_madeira", need: { madeira: 5 } },
     { id: "espada_madeira", need: { madeira: 6 } },
-    { id: "bloco_madeira", need: { madeira: 4 } },
-    { id: "bloco_pedra", need: { pedra: 4 } },
     { id: "bancada", need: { madeira: 2 } },
-    { id: "tocha", need: { madeira: 1, carvao: 1 }, give: 4 },
   ];
   const TABLE_RECIPES = [
+    { id: "bloco_madeira", need: { madeira: 4 } },
+    { id: "bloco_pedra", need: { pedra: 4 } },
+    { id: "tocha", need: { madeira: 1, carvao: 1 }, give: 4 },
     { id: "bote", need: { madeira: 6 } },
     { id: "cama", need: { madeira: 6, la: 3 } },
     { id: "linha", need: { la: 2 } },
@@ -1177,6 +1281,9 @@ input, select {
     { id: "tocha", need: { madeira: 1, carvao: 1 }, give: 4 },
     { id: "forno", need: { pedra: 8 } },
     { id: "bau", need: { madeira: 4 } },
+    { id: "bau_grande", need: { bau: 2 } },
+    { id: "porta", need: { madeira: 6 } },
+    { id: "placa", need: { madeira: 1 } },
     { id: "lanca", need: { madeira: 6, pedra: 2 } },
     { id: "machado_pedra", need: { madeira: 4, pedra: 3 } },
     { id: "picareta_pedra", need: { madeira: 3, pedra: 4 } },
@@ -1188,6 +1295,22 @@ input, select {
     { id: "picareta_ferro", need: { madeira: 3, ferro: 5 } },
     { id: "espada_ferro", need: { madeira: 2, ferro: 6 } },
   ];
+
+  const ACH = {
+    madeira: { name: "Madeira", xp: 5, need: [], desc: "Pegue a primeira madeira.", group: "basicas" },
+    melhora: { name: "Melhora", xp: 5, need: ["madeira"], desc: "Crie picareta ou machado de madeira.", group: "basicas" },
+    minerador: { name: "Minerador", xp: 5, need: ["melhora"], desc: "Pegue pedra com uma picareta.", group: "basicas" },
+    salto: { name: "Salto de qualidade", xp: 10, need: ["melhora"], desc: "Crie uma ferramenta de pedra.", group: "basicas" },
+    organizado: { name: "Organizado", xp: 5, need: ["madeira"], desc: "Crie um baú e coloque algo dentro.", group: "basicas" },
+    madeireiro: { name: "Madeireiro", xp: 10, need: ["madeira"], desc: "Junte um stack de madeira (32).", group: "basicas" },
+    explorador: { name: "Explorador", xp: 20, need: [], desc: "Encontre uma estrutura.", group: "estruturas" },
+    social: { name: "Social", xp: 20, need: [], desc: "Fale com um aldeão.", group: "estruturas" },
+    sorte_grande: { name: "Sorte grande", xp: 30, need: ["explorador"], desc: "Ache minério num baú.", group: "estruturas" },
+    explorador_expert: { name: "Explorador especialista", xp: 80, need: ["explorador"], desc: "Encontre todas as estruturas.", group: "estruturas", rare: true },
+    cacador: { name: "Caçador", xp: 20, need: [], desc: "Derrote um monstro.", group: "avancado" },
+    vassoura: { name: "Passando a vassoura", xp: 100, need: ["cacador"], desc: "Limpe uma masmorra.", group: "avancado", rare: true },
+    mina_limpa: { name: "Abandonar mina", xp: 120, need: ["cacador"], desc: "Limpe uma mina.", group: "avancado", rare: true },
+  };
 
   const FISTS = { id: "punhos", name: "Punhos", dmg: 2, rate: 450, dur: Infinity, maxDur: Infinity, color: "#e8c4a8", tree: 1, rock: 1, area: 0 };
 
@@ -1381,8 +1504,13 @@ input, select {
       state.portals.push({ x: pos.x - 1, y: pos.y - 1, w: 3, h: 3, type, diff });
     }
     state.dungeon = state.portals[0];
-    const ship = placeWaterLandmark(seed, 41, 55, 130);
-    state.ship = { x: ship.x - 3, y: ship.y - 1, w: 7, h: 3 };
+    const shipA = placeWaterLandmark(seed, 41, 55, 130);
+    const shipB = placeWaterLandmark(seed, 103, 70, 160);
+    state.ships = [
+      { x: shipA.x - 3, y: shipA.y - 1, w: 7, h: 3 },
+      { x: shipB.x - 3, y: shipB.y - 1, w: 7, h: 3 },
+    ];
+    state.ship = state.ships[0];
     const house = placeLandmark(seed, 53, 32, 78);
     state.house = { x: house.x - 2, y: house.y - 2, w: 4, h: 3 };
     const vein = placeLandmark(seed, 67, 22, 55);
@@ -1487,11 +1615,12 @@ input, select {
             else t = TILES.FLOOR;
           }
         }
-        const sh = state.ship;
-        if (sh && tx >= sh.x && tx < sh.x + sh.w && ty >= sh.y && ty < sh.y + sh.h) {
-          const edge = tx === sh.x || ty === sh.y || tx === sh.x + sh.w - 1 || ty === sh.y + sh.h - 1;
-          if (edge && ty !== sh.y + 1) t = TILES.WALL;
-          else t = TILES.PATH;
+        for (const sh of (state.ships || (state.ship ? [state.ship] : []))) {
+          if (tx >= sh.x && tx < sh.x + sh.w && ty >= sh.y && ty < sh.y + sh.h) {
+            const edge = tx === sh.x || ty === sh.y || tx === sh.x + sh.w - 1 || ty === sh.y + sh.h - 1;
+            if (edge && ty !== sh.y + 1) t = TILES.WALL;
+            else t = TILES.PATH;
+          }
         }
         const hs = state.house;
         if (hs && tx >= hs.x && tx < hs.x + hs.w && ty >= hs.y && ty < hs.y + hs.h) {
@@ -1558,9 +1687,9 @@ input, select {
         items: [makeStack(lootId, n), null, null, null],
       });
     };
-    if (state.ship) {
-      putChest(state.ship.x + 2, state.ship.y + 1, "pedra", 16);
-      putChest(state.ship.x + 4, state.ship.y + 1, "pedra", 12);
+    for (const sh of (state.ships || (state.ship ? [state.ship] : []))) {
+      putChest(sh.x + 2, sh.y + 1, "pedra", 16);
+      putChest(sh.x + 4, sh.y + 1, "pedra", 12);
     }
     if (state.house) {
       putChest(state.house.x + 2, state.house.y + 1, "madeira", 10);
@@ -1809,7 +1938,8 @@ input, select {
       const pl = placedAt(tx, ty);
       if (t === TILES.WALL) return true;
       if (treeAt(tx, ty) || rockAt(tx, ty) || oreAt(tx, ty)) return true;
-      if (pl && pl.id !== "bote" && pl.id !== "tocha" && !onWoodDock(tx, ty)) return true;
+      if (pl && pl.id === "porta" && pl.open) { /* passa */ }
+      else if (pl && pl.id !== "bote" && pl.id !== "tocha" && pl.id !== "placa" && !onWoodDock(tx, ty)) return true;
       if (t === TILES.WATER) {
         if (onBoatTile(tx, ty) || onWoodDock(tx, ty) || (opt.boat && opt.fromBoat)) continue;
         if (state.room && state.room.hardcore) return true;
@@ -1933,8 +2063,8 @@ input, select {
         delete ch.gonePlaced[pk];
         if (state.gone && state.gone.placed) delete state.gone.placed[pk];
         const old = ch.placed.find((p) => p.tx === e.tx && p.ty === e.ty);
-        if (old) { old.hp = e.hp; if (e.id) old.id = e.id; if (e.items) old.items = e.items; }
-        else ch.placed.push({ tx: e.tx, ty: e.ty, id: e.id, hp: e.hp || 5, items: e.items || null });
+        if (old) { old.hp = e.hp; if (e.id) old.id = e.id; if (e.items) old.items = e.items; if (e.open != null) old.open = e.open; if (e.text != null) old.text = e.text; }
+        else ch.placed.push({ tx: e.tx, ty: e.ty, id: e.id, hp: e.hp || 5, items: e.items || null, open: e.open, text: e.text || "" });
       }
     }
     if (e.kind === "tree" && inCh(e.tx, e.ty)) {
@@ -2031,6 +2161,170 @@ input, select {
     return s;
   }
 
+  function isSword(w) {
+    return !!(w && String(w.id || "").indexOf("espada") === 0);
+  }
+
+  const LOOK_SKIN = ["#f0c8a0", "#e8b88a", "#c48a5a", "#8d5a32", "#5a3418"];
+  const LOOK_SHIRT = ["#3a6ea5", "#c44536", "#3d7a3a", "#7a4ac8", "#d4a024", "#2a2a32", "#e8e4d8"];
+  const LOOK_HAIR = ["#2a2a32", "#6b4423", "#c47a3a", "#e8d080", "#1a1a20", "#d05070", "#4a7a3a"];
+  function defaultLook() {
+    return { skin: LOOK_SKIN[0], shirt: LOOK_SHIRT[0], hair: LOOK_HAIR[0] };
+  }
+  function loadLook() {
+    try {
+      const j = JSON.parse(localStorage.getItem("dl_look") || "null");
+      if (j && j.skin && j.shirt && j.hair) return j;
+    } catch {}
+    return defaultLook();
+  }
+  function saveLook(look) {
+    localStorage.setItem("dl_look", JSON.stringify(look));
+    if (state.player) state.player.look = look;
+  }
+
+  function xpNeed(level) { return 20 + Math.max(0, level - 1) * 15; }
+  function levelFromXp(xp) {
+    let lv = 1, left = xp || 0;
+    while (left >= xpNeed(lv)) { left -= xpNeed(lv); lv++; if (lv > 99) break; }
+    return lv;
+  }
+  function blankProfile() {
+    return { name: "", xp: 0, level: 1, ach: {}, found: {} };
+  }
+  function loadProfile() {
+    try {
+      const j = JSON.parse(localStorage.getItem("dl_profile") || "null");
+      if (j && typeof j === "object") {
+        j.ach = j.ach || {};
+        j.found = j.found || {};
+        j.xp = j.xp || 0;
+        j.level = levelFromXp(j.xp);
+        return j;
+      }
+    } catch {}
+    return blankProfile();
+  }
+  function saveProfile(prof) {
+    prof.level = levelFromXp(prof.xp || 0);
+    localStorage.setItem("dl_profile", JSON.stringify(prof));
+    if (prof.name) localStorage.setItem("dl_name", prof.name);
+    updateAccountHud();
+  }
+  function hasAccount() {
+    const p = loadProfile();
+    return !!(p && p.name);
+  }
+  function parentsOk(id, ach) {
+    const def = ACH[id];
+    return !!(def && (def.need || []).every((n) => ach[n]));
+  }
+  function grantAch(id) {
+    const def = ACH[id];
+    if (!def) return false;
+    const prof = loadProfile();
+    if (!prof.name) return false;
+    if (prof.ach[id]) return false;
+    if (!parentsOk(id, prof.ach)) return false;
+    prof.ach[id] = true;
+    prof.xp = (prof.xp || 0) + def.xp;
+    const before = prof.level || 1;
+    prof.level = levelFromXp(prof.xp);
+    saveProfile(prof);
+    showMsg("Conquista: " + def.name + " +" + def.xp + " XP");
+    if (prof.level > before) showMsg("Subiu para o nível " + prof.level + "!");
+    syncProfileServer();
+    return true;
+  }
+  function markFound(kind) {
+    const prof = loadProfile();
+    if (!prof.name) return;
+    prof.found = prof.found || {};
+    if (prof.found[kind]) return;
+    prof.found[kind] = true;
+    saveProfile(prof);
+    grantAch("explorador");
+    const need = ["village", "dungeon", "mine", "ship", "house", "vein"];
+    if (need.every((k) => prof.found[k])) grantAch("explorador_expert");
+  }
+  function updateAccountHud() {
+    const prof = loadProfile();
+    if ($("lvl-pill")) $("lvl-pill").textContent = prof.name ? ("Lv " + prof.level) : "Lv —";
+    if ($("home-player")) {
+      $("home-player").textContent = prof.name ? (prof.name + " · Lv " + prof.level + " · " + prof.xp + " XP") : "Sem conta";
+    }
+    if ($("ach-xp-line")) $("ach-xp-line").textContent = "Lv " + (prof.level || 1) + " · " + (prof.xp || 0) + " XP";
+  }
+  function renderAchTree() {
+    const box = $("ach-tree");
+    if (!box) return;
+    const prof = loadProfile();
+    const groups = { basicas: "Básicas", estruturas: "Estruturas", avancado: "Avançado" };
+    let html = "";
+    Object.keys(groups).forEach((g) => {
+      html += "<p class='pack-note'>" + groups[g] + "</p>";
+      Object.keys(ACH).forEach((id) => {
+        const a = ACH[id];
+        if (a.group !== g) return;
+        const on = !!prof.ach[id];
+        const lock = !on && !parentsOk(id, prof.ach);
+        html += '<div class="ach-card' + (on ? " on" : "") + (lock ? " lock" : "") + (a.rare ? " rare" : "") + '">';
+        html += "<b>" + a.name + (a.rare ? " · rara" : "") + " · " + a.xp + " XP</b>";
+        html += "<small>" + a.desc + (lock ? " (bloqueada)" : on ? " (feita)" : "") + "</small></div>";
+      });
+    });
+    box.innerHTML = html;
+    updateAccountHud();
+  }
+  async function syncProfileServer() {
+    const token = localStorage.getItem("dl_token");
+    if (!token) return;
+    const prof = loadProfile();
+    try {
+      await fetch(mpApiBase() + "/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+        body: JSON.stringify({ xp: prof.xp, ach: prof.ach, found: prof.found, name: prof.name }),
+      });
+    } catch {}
+  }
+  function mergeServerProfile(j) {
+    if (!j) return;
+    const local = loadProfile();
+    const ach = Object.assign({}, local.ach || {}, j.ach || {});
+    const found = Object.assign({}, local.found || {}, j.found || {});
+    const xp = Math.max(local.xp || 0, j.xp || 0);
+    const name = j.name || local.name;
+    saveProfile({ name, xp, ach, found, level: levelFromXp(xp) });
+  }
+
+
+  function drawAvatar(c, x, y, look, opt) {
+    look = look || defaultLook();
+    opt = opt || {};
+    const skin = look.skin || LOOK_SKIN[0];
+    const shirt = look.shirt || LOOK_SHIRT[0];
+    const hair = look.hair || LOOK_HAIR[0];
+    c.fillStyle = "rgba(0,0,0,0.28)";
+    c.beginPath(); c.ellipse(x, y + 12, 10, 5, 0, 0, 7); c.fill();
+    c.fillStyle = skin;
+    c.beginPath(); c.arc(x, y, 12, 0, 7); c.fill();
+    c.fillStyle = shirt;
+    c.beginPath(); c.arc(x, y + 4, 11, 0.15, Math.PI - 0.15); c.fill();
+    c.fillStyle = hair;
+    c.beginPath(); c.arc(x, y - 8, 8, Math.PI, 0); c.fill();
+    c.fillStyle = hair;
+    c.fillRect(x - 8, y - 8, 16, 5);
+    const dx = opt.dirx || 0, dy = opt.diry || 1;
+    c.strokeStyle = (opt.weapon && opt.weapon.color) || "#fff";
+    c.lineWidth = 3;
+    c.beginPath();
+    c.moveTo(x, y);
+    c.lineTo(x + dx * 18, y + dy * 18);
+    c.stroke();
+  }
+
+
   function makePlayer(spawn) {
     return {
       x: spawn.x * TILE + TILE / 2,
@@ -2043,6 +2337,7 @@ input, select {
       hunger: 20,
       maxHunger: 20,
       hungT: 0,
+      look: loadLook(),
       air: 20,
       maxAir: 20,
       airT: 0,
@@ -2106,6 +2401,11 @@ input, select {
     if (got > 0) {
       showMsg("+" + got + " " + ((ITEM[id] && ITEM[id].name) || id));
       spawnFloat(state.player.x, state.player.y - 20, "+" + got + " " + id, "#ffe08a");
+      if (id === "madeira") {
+        grantAch("madeira");
+        if (countItem("madeira") >= 32) grantAch("madeireiro");
+      }
+      if (id === "pedra" && String((equippedWeapon() || {}).id || "").indexOf("picareta") === 0) grantAch("minerador");
     } else showMsg(t("msg.full"));
     compactInv();
     renderHotbar();
@@ -2220,6 +2520,9 @@ input, select {
     for (const [k, v] of Object.entries(rec.need)) takeItem(k, v);
     addItem(rec.id, rec.give || 1);
     showMsg(t("msg.crafted", { name: (ITEM[rec.id] && ITEM[rec.id].name) || rec.id }));
+    if (rec.id === "machado_madeira" || rec.id === "picareta_madeira") grantAch("melhora");
+    if (String(rec.id).indexOf("_pedra") >= 0) grantAch("salto");
+    if (rec.id === "bau" || rec.id === "bau_grande") state.madeChest = true;
     renderInventory();
     renderHotbar();
   }
@@ -2438,26 +2741,125 @@ input, select {
   }
 
   // ---------- Menu UI ----------
-  function showHome() {
-    $("menu-home").classList.remove("hidden");
-    $("form-create").classList.add("hidden");
-    $("menu-load").classList.add("hidden");
-    $("form-pass").classList.add("hidden");
-    if ($("menu-online")) $("menu-online").classList.add("hidden");
+  function hideMenuPanes() {
+    ["menu-account","menu-home","menu-play","menu-offline","menu-settings","menu-look","menu-online","menu-ach","form-create","menu-load","form-pass"].forEach((id) => {
+      if ($(id)) $(id).classList.add("hidden");
+    });
   }
-  if ($("btn-online")) $("btn-online").onclick = () => {
-    $("menu-home").classList.add("hidden");
-    $("menu-online").classList.remove("hidden");
-    if ($("mp-host") && !$("mp-host").value) {
-      $("mp-host").value = localStorage.getItem("dl_host") || (location.port === "8787" ? location.host : "localhost:8787");
+  function showPane(id) {
+    hideMenuPanes();
+    if ($(id)) $(id).classList.remove("hidden");
+  }
+  function showHome() {
+    if (!hasAccount()) { showPane("menu-account"); return; }
+    updateAccountHud();
+    showPane("menu-home");
+  }
+
+  function renderLookMenu() {
+    const look = loadLook();
+    function paintSw(id, list, key) {
+      const box = $(id);
+      if (!box) return;
+      box.innerHTML = list.map((c) => '<button type="button" class="swatch' + (look[key] === c ? ' on' : '') + '" data-c="' + c + '" style="background:' + c + '"></button>').join("");
+      box.querySelectorAll(".swatch").forEach((b) => {
+        b.onclick = () => {
+          look[key] = b.dataset.c;
+          saveLook(look);
+          renderLookMenu();
+        };
+      });
     }
+    paintSw("sw-skin", LOOK_SKIN, "skin");
+    paintSw("sw-shirt", LOOK_SHIRT, "shirt");
+    paintSw("sw-hair", LOOK_HAIR, "hair");
+    const cv = $("look-preview");
+    if (cv) {
+      const c = cv.getContext("2d");
+      c.clearRect(0, 0, cv.width, cv.height);
+      c.fillStyle = "#15202a";
+      c.fillRect(0, 0, cv.width, cv.height);
+      c.save();
+      c.translate(cv.width / 2, cv.height / 2 + 8);
+      c.scale(3.2, 3.2);
+      drawAvatar(c, 0, 0, look, { dirx: 0, diry: 1 });
+      c.restore();
+    }
+  }
+
+
+  if ($("btn-play")) $("btn-play").onclick = () => { if (!hasAccount()) return showHome(); showPane("menu-play"); };
+  if ($("btn-ach")) $("btn-ach").onclick = () => { renderAchTree(); showPane("menu-ach"); };
+  if ($("ach-back")) $("ach-back").onclick = showHome;
+  if ($("btn-pause-ach")) $("btn-pause-ach").onclick = () => {
+    $("pause").classList.add("hidden");
+    $("menu").classList.remove("hidden");
+    renderAchTree();
+    showPane("menu-ach");
+  };
+  async function accSubmit(isNew) {
+    const user = ($("acc-user") && $("acc-user").value.trim()) || "";
+    const pass = ($("acc-pass") && $("acc-pass").value) || "";
+    const st = $("acc-status");
+    if (!/^[a-zA-Z0-9_]{3,16}$/.test(user)) {
+      if (st) st.textContent = "Usuário: 3-16 letras, números ou _";
+      return;
+    }
+    if (pass.length < 4) {
+      if (st) st.textContent = "Senha curta demais.";
+      return;
+    }
+    const local = loadProfile();
+    local.name = user;
+    saveProfile(local);
+    localStorage.setItem("dl_name", user);
+    if ($("mp-host") && !$("mp-host").value) $("mp-host").value = "denselandsbackend.onrender.com";
+    if ($("mp-user")) $("mp-user").value = user;
+    if ($("mp-pass")) $("mp-pass").value = pass;
+    if (st) st.textContent = "Conta local ok. Tentando o servidor…";
+    try {
+      await mpAuth(isNew);
+      mergeServerProfile({ name: net.name, xp: local.xp, ach: local.ach });
+      if (st) st.textContent = "Conta pronta.";
+    } catch (e) {
+      if (st) st.textContent = "Local ok. Servidor: " + e.message;
+    }
+    showHome();
+  }
+  if ($("acc-create")) $("acc-create").onclick = () => accSubmit(true);
+  if ($("acc-login")) $("acc-login").onclick = () => accSubmit(false);
+  if ($("sign-close")) $("sign-close").onclick = () => $("sign-box").classList.add("hidden");
+  if ($("sign-save")) $("sign-save").onclick = () => {
+    const pl = state.openSign;
+    if (pl) {
+      pl.text = String($("sign-text").value || "").slice(0, 80);
+      shareEdit({ kind: "place", tx: pl.tx, ty: pl.ty, id: "placa", hp: pl.hp, text: pl.text });
+      showMsg("Placa gravada.");
+    }
+    $("sign-box").classList.add("hidden");
+  };
+  if ($("play-back")) $("play-back").onclick = showHome;
+  if ($("btn-offline")) $("btn-offline").onclick = () => showPane("menu-offline");
+  if ($("offline-back")) $("offline-back").onclick = () => showPane("menu-play");
+  if ($("btn-settings")) $("btn-settings").onclick = () => showPane("menu-settings");
+  if ($("settings-back")) $("settings-back").onclick = showHome;
+  if ($("btn-look")) $("btn-look").onclick = () => { showPane("menu-look"); renderLookMenu(); };
+  if ($("look-back")) $("look-back").onclick = showHome;
+  if ($("btn-online")) $("btn-online").onclick = () => {
+    showPane("menu-online");
+    const host = "denselandsbackend.onrender.com";
+    if ($("mp-host")) $("mp-host").value = mpCleanHost(localStorage.getItem("dl_host") || host);
     if (localStorage.getItem("dl_name") && $("mp-user")) $("mp-user").value = localStorage.getItem("dl_name");
+    if (localStorage.getItem("dl_token")) {
+      net.token = localStorage.getItem("dl_token");
+      net.name = localStorage.getItem("dl_name") || "";
+    }
+    if ($("mp-status")) $("mp-status").textContent = "Conectando a " + ($("mp-host").value) + "…";
     mpRefresh();
   };
-  if ($("online-back")) $("online-back").onclick = showHome;
+  if ($("online-back")) $("online-back").onclick = () => showPane("menu-play");
   $("btn-create").onclick = () => {
-    $("menu-home").classList.add("hidden");
-    $("form-create").classList.remove("hidden");
+    showPane("form-create");
   };
   if ($("seed-tabs")) {
     $("seed-tabs").onclick = (e) => {
@@ -2475,8 +2877,8 @@ input, select {
       showMsg("Seed " + b.dataset.seed + " escolhida");
     };
   });
-  $("create-back").onclick = showHome;
-  $("load-back").onclick = showHome;
+  $("create-back").onclick = () => showPane("menu-offline");
+  $("load-back").onclick = () => showPane("menu-offline");
   $("pass-back").onclick = () => { renderLoadList(); };
   $("room-type").onchange = () => {
     $("pass-wrap").classList.toggle("hidden", $("room-type").value !== "private");
@@ -2491,9 +2893,7 @@ input, select {
 
   let pendingRoom = null;
   function renderLoadList() {
-    $("menu-home").classList.add("hidden");
-    $("form-pass").classList.add("hidden");
-    $("menu-load").classList.remove("hidden");
+    showPane("menu-load");
     const list = loadIndex();
     const box = $("room-list");
     if (!list.length) {
@@ -2770,6 +3170,17 @@ input, select {
     } else if (id === "ouro_bruto") {
       g.fillStyle = "#c9a227";
       g.beginPath(); g.moveTo(6, 22); g.lineTo(12, 8); g.lineTo(22, 10); g.lineTo(26, 22); g.fill();
+    } else if (id === "bau_grande") {
+      g.fillStyle = "#6b4423"; g.fillRect(4, 8, 24, 18);
+      g.fillStyle = "#e0b44b"; g.fillRect(14, 14, 4, 4);
+      g.fillStyle = "#c48a4a"; g.fillRect(6, 10, 20, 3);
+    } else if (id === "porta") {
+      g.fillStyle = "#6b4423"; g.fillRect(8, 4, 16, 24);
+      g.fillStyle = "#8b5a2b"; g.fillRect(10, 6, 12, 20);
+      g.fillStyle = "#e0b44b"; g.fillRect(18, 16, 3, 3);
+    } else if (id === "placa") {
+      g.fillStyle = "#8b5a2b"; g.fillRect(14, 16, 4, 12);
+      g.fillStyle = "#c48a4a"; g.fillRect(6, 6, 20, 12);
     } else {
       g.fillStyle = "#888"; g.fillRect(8, 8, 16, 16);
     }
@@ -3012,18 +3423,28 @@ input, select {
   }
 
   // ---------- Inventory / dialog ----------
+  function renderPips(el, value, max) {
+    if (!el) return;
+    const n = 10;
+    const unit = (max || 20) / n;
+    let html = "";
+    for (let i = 0; i < n; i++) {
+      const left = value - i * unit;
+      const cls = left >= unit - 0.01 ? "on" : left >= unit / 2 - 0.01 ? "half" : "";
+      html += '<span class="pip ' + cls + '"></span>';
+    }
+    el.innerHTML = html;
+  }
   function updateHud() {
     if (!state.player) return;
     $("gold-pill").textContent = t("gold", { n: countItem("ouro") });
-    const pct = Math.max(0, state.player.hp) / state.player.maxHp * 100;
-    $("hp-fill").style.width = pct + "%";
-    $("hp-text").textContent = Math.max(0, Math.ceil(state.player.hp)) + "/" + state.player.maxHp;
     $("hint").textContent = state.hint;
     if ($("clock-pill")) $("clock-pill").textContent = dayLabel();
-    if ($("hunger-fill")) {
-      const h = Math.max(0, state.player.hunger || 0) / (state.player.maxHunger || 20) * 100;
-      $("hunger-fill").style.width = h + "%";
-      $("hunger-text").textContent = Math.ceil(state.player.hunger || 0) + "/" + (state.player.maxHunger || 20);
+    renderPips($("hp-pips"), Math.max(0, state.player.hp), state.player.maxHp || 20);
+    renderPips($("hunger-pips"), Math.max(0, state.player.hunger || 0), state.player.maxHunger || 20);
+    if ($("air-fill")) {
+      const a = Math.max(0, state.player.air || 0) / (state.player.maxAir || 20) * 100;
+      $("air-fill").style.width = a + "%";
     }
   }
 
@@ -3036,35 +3457,15 @@ input, select {
     (p.hot || []).forEach((s, i) => cells.push({ row: "hot", i, s }));
     (p.bag || []).forEach((s, i) => cells.push({ row: "bag", i, s }));
     box.innerHTML = cells.map((c) => {
-      if (!c.s) return `<button type="button" class="icon-card empty" draggable="true" data-row="${c.row}" data-i="${c.i}">vazio</button>`;
+      if (!c.s) return `<button type="button" class="icon-card empty" data-row="${c.row}" data-i="${c.i}">vazio</button>`;
       const name = (ITEM[c.s.id] && ITEM[c.s.id].name) || c.s.id;
-      return `<button type="button" class="icon-card" draggable="true" data-row="${c.row}" data-i="${c.i}">
+      return `<button type="button" class="icon-card" data-row="${c.row}" data-i="${c.i}">
         <img alt="" src="${itemIcon(c.s.id, 44)}">${name}<small>${c.s.n}</small>${barHtml(c.s)}
       </button>`;
     }).join("");
-    box.querySelectorAll("[data-row]").forEach((el) => {
-      el.ondragstart = (ev) => {
-        ev.dataTransfer.setData("text/plain", el.dataset.row + ":" + el.dataset.i);
-        state.dragSlot = { row: el.dataset.row, i: Number(el.dataset.i) };
-      };
-      el.ondragover = (ev) => ev.preventDefault();
-      el.ondrop = (ev) => {
-        ev.preventDefault();
-        const raw = ev.dataTransfer.getData("text/plain") || "";
-        const [row, i] = raw.split(":");
-        swapSlots(row, Number(i), el.dataset.row, Number(el.dataset.i));
-      };
-      el.onclick = () => { state.pickSlot = { row: el.dataset.row, i: Number(el.dataset.i) }; };
-    });
+    box.querySelectorAll("[data-row]").forEach((el) => bindInvSlot(el));
     if ($("equipped")) $("equipped").innerHTML = "";
-    const tab = state.craftTab || "todos";
-    const filt = state.craftFilt || "todos";
-    const rawList = RECIPES.concat(TABLE_RECIPES);
-    const seen = new Set();
-    let list = rawList.filter((r) => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
-    if (tab !== "todos" && RECIPE_CAT[tab]) list = list.filter((r) => RECIPE_CAT[tab].has(r.id));
-    if (filt === "ok") list = list.filter((r) => canCraft(r));
-    if (filt === "falta") list = list.filter((r) => !canCraft(r));
+    const list = RECIPES.slice();
     if ($("recipes")) {
       $("recipes").innerHTML = list.map((r, i) => {
         const name = (ITEM[r.id] && ITEM[r.id].name) || r.id;
@@ -3077,6 +3478,84 @@ input, select {
       $("recipes").querySelectorAll("[data-craft]").forEach((b) => {
         b.onclick = () => { doCraft(list[Number(b.dataset.craft)]); renderInventory(); };
       });
+    }
+  }
+
+
+  function slotFromPoint(x, y) {
+    const stack = document.elementsFromPoint(x, y);
+    for (const n of stack) {
+      const el = n.closest && n.closest("[data-row]");
+      if (el) return el;
+    }
+    return null;
+  }
+  function bindInvSlot(el) {
+    el.addEventListener("pointerdown", (ev) => {
+      if (ev.button && ev.button !== 0) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      const row = el.dataset.row;
+      const i = Number(el.dataset.i);
+      const sl = state.player && state.player[row] && state.player[row][i];
+      state.drag = { row, i, x: ev.clientX, y: ev.clientY, moved: false, sl };
+      el.classList.add("lift");
+      try { el.setPointerCapture(ev.pointerId); } catch {}
+    });
+    el.addEventListener("pointermove", (ev) => {
+      const d = state.drag;
+      if (!d || d.row !== el.dataset.row || d.i !== Number(el.dataset.i)) return;
+      if (!d.moved && Math.hypot(ev.clientX - d.x, ev.clientY - d.y) > 8) {
+        d.moved = true;
+        const g = $("drag-ghost");
+        if (g && d.sl) {
+          g.classList.remove("hidden");
+          g.innerHTML = '<img alt="" src="' + itemIcon(d.sl.id, 40) + '">';
+        }
+      }
+      const g = $("drag-ghost");
+      if (d.moved && g) {
+        g.style.left = (ev.clientX - 28) + "px";
+        g.style.top = (ev.clientY - 28) + "px";
+      }
+    });
+    el.addEventListener("pointerup", (ev) => finishInvDrag(ev, el));
+    el.addEventListener("pointercancel", (ev) => finishInvDrag(ev, el));
+    el.addEventListener("click", (ev) => {
+      if (state.justDragged) { ev.preventDefault(); ev.stopPropagation(); return; }
+      state.pickSlot = { row: el.dataset.row, i: Number(el.dataset.i) };
+    });
+  }
+  function finishInvDrag(ev, el) {
+    const d = state.drag;
+    const g = $("drag-ghost");
+    if (g) g.classList.add("hidden");
+    if (el) el.classList.remove("lift");
+    state.drag = null;
+    if (!d) return;
+    if (!d.moved) return;
+    state.justDragged = true;
+    setTimeout(() => { state.justDragged = false; }, 80);
+    const target = slotFromPoint(ev.clientX, ev.clientY);
+    if (target && (target.dataset.row !== d.row || Number(target.dataset.i) !== d.i)) {
+      swapSlots(d.row, d.i, target.dataset.row, Number(target.dataset.i));
+      return;
+    }
+    const inv = $("inventory");
+    if (!inv) return;
+    const r = inv.getBoundingClientRect();
+    if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) {
+      const sl = state.player[d.row][d.i];
+      if (!sl) return;
+      if (d.row === "hot") { state.hotSel = d.i; dropSelected(); }
+      else {
+        const copy = { ...sl };
+        state.player.bag[d.i] = null;
+        dropItem(copy.id, copy.n, state.player.x, state.player.y, false);
+        if (state.drops.length) state.drops[state.drops.length - 1].stack = copy;
+      }
+      renderInventory();
+      renderHotbar();
     }
   }
 
@@ -3191,7 +3670,7 @@ input, select {
       if (state.village) pts.push(["vila", state.village.ox, state.village.oy]);
       (state.portals || []).forEach((d, i) => pts.push(["masmorra" + (i + 1), d.x, d.y]));
       (state.mines || []).forEach((d, i) => pts.push(["mina" + (i + 1), d.x, d.y]));
-      if (state.ship) pts.push(["navio", state.ship.x, state.ship.y]);
+      (state.ships || (state.ship ? [state.ship] : [])).forEach((sh, i) => pts.push(["navio" + (i + 1), sh.x, sh.y]));
       if (state.house) pts.push(["casa", state.house.x, state.house.y]);
       if (state.vein) pts.push(["filão", state.vein.x, state.vein.y]);
       pts.sort((a, b) => Math.hypot(a[1] * TILE - p.x, a[2] * TILE - p.y) - Math.hypot(b[1] * TILE - p.x, b[2] * TILE - p.y));
@@ -3258,6 +3737,7 @@ input, select {
   }
 
   function openNpc(npc) {
+    grantAch("social");
     $("inventory").classList.add("hidden");
     $("furnace").classList.add("hidden");
     $("dialog").classList.remove("hidden");
@@ -3439,7 +3919,7 @@ input, select {
     state.slash = 0.18;
     windBurst(p.x, p.y, p.dirx, p.diry);
     mpHitCheck();
-    const reach = 38;
+    const reach = isSword(w) ? 50 : 38;
     const ax = p.x + p.dirx * reach;
     const ay = p.y + p.diry * reach;
 
@@ -3516,7 +3996,7 @@ input, select {
       }
     }
 
-    const reachHit = w.id === "arco" ? 118 : (info.area ? 66 : 46);
+    const reachHit = w.id === "arco" ? 118 : (info.area ? 66 : isSword(w) ? Math.round(46 * 1.33) : 46);
     const needAlign = info.area ? -20 : 8;
     if (w.id === "arco") {
       if (countItem("flecha") <= 0) {
@@ -3560,6 +4040,8 @@ input, select {
           dropItem("ouro", e.gold, e.x, e.y, true);
           if (e.kind === "esqueleto") dropItem("flecha", 1 + (Math.random() * 3 | 0), e.x, e.y, true);
           spawnFloat(e.x, e.y, "derrotado", "#ffe08a");
+          grantAch("cacador");
+          checkDimCleared();
         }
       }
     }
@@ -3598,12 +4080,15 @@ input, select {
     const def = ITEM[slot.id];
     const placed = { tx, ty, id: slot.id, hp: def.hp || 5 };
     if (slot.id === "bau") placed.items = emptyRow(4);
+    if (slot.id === "bau_grande") placed.items = emptyRow(8);
+    if (slot.id === "porta") placed.open = false;
+    if (slot.id === "placa") placed.text = "";
     if (state.dim) state.dim.placed.push(placed);
     else ensureChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK)).placed.push(placed);
     takeFromSlot(state.player.hot, state.hotSel, 1);
     renderHotbar();
     showMsg("Colocou " + def.name);
-    shareEdit({ kind: "place", tx, ty, id: placed.id, hp: placed.hp, items: placed.items || null });
+    shareEdit({ kind: "place", tx, ty, id: placed.id, hp: placed.hp, items: placed.items || null, open: placed.open, text: placed.text || "" });
   }
 
   function tryInteract() {
@@ -3622,6 +4107,16 @@ input, select {
     }
     if (state.nearbyChest) {
       openChest(state.nearbyChest);
+      return;
+    }
+    if (state.nearbyDoor) {
+      state.nearbyDoor.open = !state.nearbyDoor.open;
+      showMsg(state.nearbyDoor.open ? "Porta aberta." : "Porta fechada.");
+      shareEdit({ kind: "place", tx: state.nearbyDoor.tx, ty: state.nearbyDoor.ty, id: "porta", hp: state.nearbyDoor.hp, open: state.nearbyDoor.open });
+      return;
+    }
+    if (state.nearbySign) {
+      openSign(state.nearbySign);
       return;
     }
     if (state.nearbyBed) {
@@ -3691,9 +4186,32 @@ input, select {
     openFurnace();
   }
 
+  function checkDimCleared() {
+    if (!state.dim) return;
+    const alive = (state.dim.enemies || []).some((e) => e.alive);
+    if (alive) return;
+    if (state.dim.kind === "dungeon") grantAch("vassoura");
+    if (state.dim.kind === "mine") grantAch("mina_limpa");
+  }
+  function openSign(pl) {
+    state.openSign = pl;
+    const box = $("sign-box");
+    if (!box) {
+      const txt = window.prompt("Texto da placa", pl.text || "") || "";
+      pl.text = String(txt).slice(0, 80);
+      shareEdit({ kind: "place", tx: pl.tx, ty: pl.ty, id: "placa", hp: pl.hp, text: pl.text });
+      return;
+    }
+    box.classList.remove("hidden");
+    $("sign-text").value = pl.text || "";
+  }
+
   function openChest(pl) {
     state.openChest = pl;
-    if (!pl.items) pl.items = emptyRow(4);
+    const slots = pl.id === "bau_grande" ? 8 : 4;
+    if (!pl.items) pl.items = emptyRow(slots);
+    while (pl.items.length < slots) pl.items.push(null);
+    if (pl.items.some((s) => s && /_bruto$/.test(s.id))) grantAch("sorte_grande");
     $("inventory").classList.add("hidden");
     $("furnace").classList.add("hidden");
     $("chest").classList.remove("hidden");
@@ -3746,8 +4264,10 @@ input, select {
         if (s.n <= 0) state.player.bag[i] = null;
       }
     }
+    if (!fromChest) grantAch("organizado");
     renderChest();
     renderHotbar();
+    shareEdit({ kind: "place", tx: pl.tx, ty: pl.ty, id: pl.id, hp: pl.hp, items: pl.items });
   }
 
   function sleepInBed() {
@@ -3891,7 +4411,7 @@ input, select {
 
     const p = state.player;
     p.hungT = (p.hungT || 0) + dt;
-    if (p.hungT > 11) {
+    if (p.hungT > 24) {
       p.hungT = 0;
       p.hunger = Math.max(0, (p.hunger == null ? 20 : p.hunger) - 1);
       if (p.hunger <= 0) {
@@ -4016,6 +4536,8 @@ input, select {
     state.nearbyTable = false;
     state.nearbyFurnace = false;
     state.nearbyChest = null;
+    state.nearbyDoor = null;
+    state.nearbySign = null;
     state.nearbyPortal = null;
     state.nearbyMine = null;
     state.nearbyExit = false;
@@ -4028,7 +4550,9 @@ input, select {
     const nearPl = placedAt(tx, ty) || placedAt(standTx, standTy);
     if (nearPl && nearPl.id === "bancada") state.nearbyTable = true;
     if (nearPl && nearPl.id === "forno") state.nearbyFurnace = true;
-    if (nearPl && nearPl.id === "bau") state.nearbyChest = nearPl;
+    if (nearPl && (nearPl.id === "bau" || nearPl.id === "bau_grande")) state.nearbyChest = nearPl;
+    if (nearPl && nearPl.id === "porta") state.nearbyDoor = nearPl;
+    if (nearPl && nearPl.id === "placa") state.nearbySign = nearPl;
     if (nearPl && nearPl.id === "cama") state.nearbyBed = true;
     if (state.dim && state.dim.exit && tx === state.dim.exit.tx && ty === state.dim.exit.ty) state.nearbyExit = true;
     if (!state.dim) {
@@ -4036,6 +4560,15 @@ input, select {
       if (door) state.nearbyPortal = door;
       const md = mineDoorAt(tx, ty) || mineDoorAt(standTx, standTy);
       if (md) state.nearbyMine = md;
+    }
+    if (!state.dim) {
+      if (state.village && Math.hypot(p.x - (state.village.ox + state.village.w / 2) * TILE, p.y - (state.village.oy + state.village.h / 2) * TILE) < 220) markFound("village");
+      if (state.portals) state.portals.forEach((d) => { if (Math.hypot(p.x - (d.x + 1) * TILE, p.y - (d.y + 1) * TILE) < 140) markFound("dungeon"); });
+      if (state.mines) state.mines.forEach((d) => { if (Math.hypot(p.x - (d.x + 1) * TILE, p.y - (d.y + 1) * TILE) < 140) markFound("mine"); });
+      if (state.ships) state.ships.forEach((d) => { if (Math.hypot(p.x - (d.x + 3) * TILE, p.y - (d.y + 1) * TILE) < 160) markFound("ship"); });
+      else if (state.ship && Math.hypot(p.x - (state.ship.x + 3) * TILE, p.y - (state.ship.y + 1) * TILE) < 160) markFound("ship");
+      if (state.house && Math.hypot(p.x - (state.house.x + 2) * TILE, p.y - (state.house.y + 1) * TILE) < 140) markFound("house");
+      if (state.vein && Math.hypot(p.x - (state.vein.x + 2) * TILE, p.y - (state.vein.y + 2) * TILE) < 140) markFound("vein");
     }
     if (state.village) {
       for (const npc of state.village.npcs) {
@@ -4060,6 +4593,8 @@ input, select {
     else if (state.nearbyTable) state.hint = "X / B · usar a bancada";
     else if (state.nearbyFurnace) state.hint = "X / B · usar o forno";
     else if (state.nearbyChest) state.hint = "X / B · abrir o baú";
+    else if (state.nearbyDoor) state.hint = state.nearbyDoor.open ? "X / B · fechar a porta" : "X / B · abrir a porta";
+    else if (state.nearbySign) state.hint = (state.nearbySign.text ? ('"' + state.nearbySign.text + '" · ') : "") + "X / B · escrever";
     else if (state.nearbyBed) state.hint = "X / B · dormir na cama";
     else if (state.nearbyExit) state.hint = "X / B · sair da masmorra";
     else if (state.nearbyPortal) {
@@ -4280,34 +4815,28 @@ input, select {
       ctx.setLineDash([]);
     }
 
+
+    if (state.dim && state.dim.exit) {
+      const ex = worldToScreen(state.dim.exit.tx * TILE + TILE / 2, state.dim.exit.ty * TILE + TILE / 2);
+      const pulse = 0.35 + 0.25 * Math.sin(performance.now() / 280);
+      const g = ctx.createRadialGradient(ex.x, ex.y, 4, ex.x, ex.y, 38);
+      g.addColorStop(0, "rgba(255,240,160," + (0.55 + pulse).toFixed(2) + ")");
+      g.addColorStop(1, "rgba(255,220,80,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(ex.x, ex.y, 38, 0, 7); ctx.fill();
+      ctx.strokeStyle = "rgba(255,230,120,0.95)";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(ex.x - 16, ex.y - 16, 32, 32);
+    }
     // player
     const p = state.player;
     const ps = worldToScreen(p.x, p.y);
-    ctx.fillStyle = "rgba(0,0,0,0.28)";
-    ctx.beginPath(); ctx.ellipse(ps.x, ps.y + 12, 10, 5, 0, 0, 7); ctx.fill();
-    ctx.fillStyle = "#f0c8a0";
-    ctx.beginPath(); ctx.arc(ps.x, ps.y, 12, 0, 7); ctx.fill();
-    ctx.fillStyle = "#3a6ea5";
-    ctx.beginPath(); ctx.arc(ps.x, ps.y + 4, 11, 0.15, Math.PI - 0.15); ctx.fill();
-    ctx.fillStyle = "#2a2a32";
-    ctx.beginPath(); ctx.arc(ps.x, ps.y - 8, 8, Math.PI, 0); ctx.fill();
-    // facing
-    ctx.strokeStyle = equippedWeapon().color || "#fff";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(ps.x, ps.y);
-    ctx.lineTo(ps.x + p.dirx * 18, ps.y + p.diry * 18);
-    ctx.stroke();
+    drawAvatar(ctx, ps.x, ps.y, p.look || loadLook(), { dirx: p.dirx, diry: p.diry, weapon: equippedWeapon() });
     if (state.peers) {
       Object.values(state.peers).forEach((o) => {
         if (o.x == null) return;
         const os = worldToScreen(o.x, o.y);
-        ctx.fillStyle = "rgba(0,0,0,0.28)";
-        ctx.beginPath(); ctx.ellipse(os.x, os.y + 12, 10, 5, 0, 0, 7); ctx.fill();
-        ctx.fillStyle = "#7ec8c0";
-        ctx.beginPath(); ctx.arc(os.x, os.y, 12, 0, 7); ctx.fill();
-        ctx.fillStyle = "#1b403c";
-        ctx.beginPath(); ctx.arc(os.x, os.y + 4, 11, 0.15, Math.PI - 0.15); ctx.fill();
+        drawAvatar(ctx, os.x, os.y, { skin: o.skin, shirt: o.shirt, hair: o.hair }, { dirx: o.dirx || 0, diry: o.diry || 1 });
         ctx.fillStyle = "#fff";
         ctx.font = "bold 12px Nunito";
         ctx.textAlign = "center";
@@ -4477,11 +5006,27 @@ input, select {
       ctx.fillRect(x - 8, y - 2, 16, 12);
       return;
     }
-    if (pl.id === "bau") {
-      ctx.fillStyle = "#6b4423";
+    if (pl.id === "bau" || pl.id === "bau_grande") {
+      ctx.fillStyle = pl.id === "bau_grande" ? "#4a2e16" : "#6b4423";
       ctx.fillRect(x - 16, y - 8, 32, 20);
       ctx.fillStyle = "#e0b44b";
       ctx.fillRect(x - 3, y - 1, 6, 6);
+      if (pl.id === "bau_grande") ctx.fillRect(x - 10, y - 1, 4, 4);
+      return;
+    }
+    if (pl.id === "porta") {
+      ctx.fillStyle = "#5a3418";
+      if (pl.open) ctx.fillRect(x - 16, y - 16, 8, 32);
+      else ctx.fillRect(x - 14, y - 16, 28, 32);
+      ctx.fillStyle = "#e0b44b";
+      if (!pl.open) ctx.fillRect(x + 6, y, 4, 4);
+      return;
+    }
+    if (pl.id === "placa") {
+      ctx.fillStyle = "#6b4423";
+      ctx.fillRect(x - 2, y, 4, 14);
+      ctx.fillStyle = "#c48a4a";
+      ctx.fillRect(x - 14, y - 14, 28, 16);
       return;
     }
     if (pl.id === "tocha") {
@@ -4550,12 +5095,23 @@ input, select {
   state.peers = state.peers || {};
   state.online = false;
 
+  function mpCleanHost(raw) {
+    let host = String(raw || "").trim();
+    host = host.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+    const local = /^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host);
+    if (!local) host = host.replace(/:\d+$/, "");
+    return host || "localhost:8787";
+  }
+  function mpIsLocalHost(host) {
+    return /^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host);
+  }
   function mpApiBase() {
-    const host = ($("mp-host") && $("mp-host").value.trim()) || net.host || "localhost:8787";
-    net.host = host.replace(/^https?:\/\//, "");
-    localStorage.setItem("dl_host", net.host);
-    const proto = location.protocol === "https:" ? "https://" : "http://";
-    return proto + net.host;
+    const host = mpCleanHost(($("mp-host") && $("mp-host").value) || net.host || "localhost:8787");
+    net.host = host;
+    if ($("mp-host")) $("mp-host").value = host;
+    localStorage.setItem("dl_host", host);
+    const secure = !mpIsLocalHost(host) || location.protocol === "https:";
+    return (secure ? "https://" : "http://") + host;
   }
   function mpSay(text, sys) {
     const log = $("mp-log");
@@ -4569,17 +5125,27 @@ input, select {
   async function mpAuth(reg) {
     const user = $("mp-user").value.trim();
     const pass = $("mp-pass").value;
-    const r = await fetch(mpApiBase() + (reg ? "/api/register" : "/api/login"), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user, pass }),
-    });
-    const j = await r.json();
+    let r, text;
+    try {
+      r = await fetch(mpApiBase() + (reg ? "/api/register" : "/api/login"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user, pass }),
+      });
+      text = await r.text();
+    } catch (err) {
+      throw new Error("Não alcançou o servidor. Use só denselandsbackend.onrender.com (sem porta).");
+    }
+    let j = {};
+    try { j = JSON.parse(text); } catch {
+      throw new Error("Servidor respondeu HTML (link errado ou app dormindo). Sem porta no host.");
+    }
     if (!r.ok) throw new Error(j.error || "falhou");
     net.token = j.token; net.name = j.name;
     localStorage.setItem("dl_token", j.token);
     localStorage.setItem("dl_name", j.name);
-    $("mp-status").textContent = "Olá, " + j.name;
+    mergeServerProfile({ name: j.name, xp: j.xp, ach: j.ach, found: j.found });
+    if ($("mp-status")) $("mp-status").textContent = "Olá, " + j.name + " · Lv " + loadProfile().level;
     mpRefresh();
   }
   async function mpRefresh() {
@@ -4609,8 +5175,9 @@ input, select {
     const card = [...document.querySelectorAll("#mp-slots .room")].find((el) => el.querySelector("[data-slot='" + key + "']"));
     if (card && /vazia/.test(card.textContent)) seed = prompt("Sala vazia. Seed (vazio = aleatória)") || "";
     net.pending = { key, seed };
-    const host = net.host || "localhost:8787";
-    const wsProto = (location.protocol === "https:" ? "wss://" : "ws://");
+    const host = mpCleanHost(net.host || ($("mp-host") && $("mp-host").value) || "localhost:8787");
+    net.host = host;
+    const wsProto = mpIsLocalHost(host) && location.protocol !== "https:" ? "ws://" : "wss://";
     if (net.ws) try { net.ws.close(); } catch {}
     net.ws = new WebSocket(wsProto + host + "/ws");
     net.ws.onopen = () => net.ws.send(JSON.stringify({ type: "auth", token: net.token }));
@@ -4742,7 +5309,8 @@ input, select {
     if (t - net.lastPos < 50) return;
     net.lastPos = t;
     const p = state.player;
-    mpSend({ type: "pos", x: p.x, y: p.y, dirx: p.dirx, diry: p.diry });
+    const lk = p.look || loadLook();
+    mpSend({ type: "pos", x: p.x, y: p.y, dirx: p.dirx, diry: p.diry, skin: lk.skin, shirt: lk.shirt, hair: lk.hair });
   }
   function mpHitCheck() {
     if (!state.online || !state.player) return;
@@ -4756,7 +5324,7 @@ input, select {
       const dx = o.x - p.x, dy = o.y - p.y;
       const dist = Math.hypot(dx, dy);
       const align = dx * p.dirx + dy * p.diry;
-      if (dist < 46 && align > 8) mpSend({ type: "hit", name, dmg: w.dmg || 4 });
+      if (dist < (isSword(w) ? Math.round(46 * 1.33) : 46) && align > 8) mpSend({ type: "hit", name, dmg: w.dmg || 4 });
     });
   }
   if ($("mp-login")) $("mp-login").onclick = () => mpAuth(false).catch((e) => { $("mp-status").textContent = e.message; });
@@ -4780,8 +5348,10 @@ input, select {
   window.addEventListener("beforeunload", () => {
     if (state.mode === "play") persist();
   });
+  updateAccountHud();
+  if (!hasAccount()) showPane("menu-account");
+  else showHome();
 })();
-
-  </script>
+</script>
 </body>
 </html>
