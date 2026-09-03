@@ -752,7 +752,7 @@ input, select {
           <h3>Skill e armadura</h3>
           <div id="inv-special" class="icon-grid"></div>
           <p class="pack-note">Uma skill só. Trocar apaga a antiga. Armadura impede nado e deixa mais lento.</p>
-          <p class="pack-note" id="inv-note" data-i18n="inv.note">Arraste para mover. Q ou arraste para fora para soltar no chão.</p>
+          <p class="pack-note" id="inv-note" data-i18n="inv.note">Toque para selecionar, toque em outro slot para mover. Arraste entre slots. Só dropa se soltar bem fora da mochila.</p>
         </div>
         <div class="inv-right">
           <h3>Craft rápido</h3>
@@ -1034,7 +1034,7 @@ input, select {
     <div id="drag-ghost" class="hidden"></div>
   </div>
 
-    <script>
+      <script>
 (() => {
   "use strict";
 
@@ -1050,7 +1050,7 @@ input, select {
       "hud.air": "ar",
       "inv.title": "Mochila",
       "inv.slots": "8 espaços",
-      "inv.note": "Arraste para mover. Q ou arraste para fora para soltar no chão.",
+      "inv.note": "Toque para selecionar, toque em outro slot para mover. Arraste entre slots. Só dropa se soltar bem fora da mochila.",
       "tab.all": "Todos", "tab.tools": "Ferramentas", "tab.build": "Construção", "tab.util": "Utilitários",
       "filt.all": "Todos", "filt.ok": "Craftável", "filt.miss": "Falta algo",
       "chest.title": "Baú", "chest.inside": "Dentro", "chest.bag": "Saco",
@@ -3759,10 +3759,12 @@ input, select {
     const cells = [];
     (p.hot || []).forEach((s, i) => cells.push({ row: "hot", i, s }));
     (p.bag || []).forEach((s, i) => cells.push({ row: "bag", i, s }));
+    const pick = state.pickSlot;
+    const onCls = (row, i) => (pick && pick.row === row && pick.i === i) ? " on" : "";
     box.innerHTML = cells.map((c) => {
-      if (!c.s) return `<button type="button" class="icon-card empty" data-row="${c.row}" data-i="${c.i}">vazio</button>`;
+      if (!c.s) return `<button type="button" class="icon-card empty${onCls(c.row, c.i)}" data-row="${c.row}" data-i="${c.i}">vazio</button>`;
       const name = (ITEM[c.s.id] && ITEM[c.s.id].name) || c.s.id;
-      return `<button type="button" class="icon-card" data-row="${c.row}" data-i="${c.i}">
+      return `<button type="button" class="icon-card${onCls(c.row, c.i)}" data-row="${c.row}" data-i="${c.i}">
         <img alt="" src="${itemIcon(c.s.id, 44)}">${name}<small>${c.s.n}</small>${barHtml(c.s)}
       </button>`;
     }).join("");
@@ -3775,9 +3777,10 @@ input, select {
         { row: "chest", s: p.chest, lab: "Peitoral" },
       ];
       spec.innerHTML = rows.map((c) => {
-        if (!c.s) return `<button type="button" class="icon-card empty" data-row="${c.row}" data-i="0">${c.lab}</button>`;
+        const sel = (pick && pick.row === c.row) ? " on" : "";
+        if (!c.s) return `<button type="button" class="icon-card empty${sel}" data-row="${c.row}" data-i="0">${c.lab}</button>`;
         const name = c.row === "skill" ? skillLabel(c.s) : ((ITEM[c.s.id] && ITEM[c.s.id].name) || c.s.id);
-        return `<button type="button" class="icon-card" data-row="${c.row}" data-i="0"><img alt="" src="${itemIcon(c.s.id, 44)}">${name}<small>${c.lab}</small></button>`;
+        return `<button type="button" class="icon-card${sel}" data-row="${c.row}" data-i="0"><img alt="" src="${itemIcon(c.s.id, 44)}">${name}<small>${c.lab}</small></button>`;
       }).join("");
       spec.querySelectorAll("[data-row]").forEach((el) => bindInvSlot(el));
     }
@@ -3799,30 +3802,43 @@ input, select {
   }
 
 
+  function slotItem(row, i) {
+    const ref = slotRef(row, i);
+    return ref ? ref.get() : null;
+  }
   function slotFromPoint(x, y) {
-    const stack = document.elementsFromPoint(x, y);
+    const stack = (document.elementsFromPoint && document.elementsFromPoint(x, y)) || [];
     for (const n of stack) {
-      const el = n.closest && n.closest("[data-row]");
+      if (n.id === "drag-ghost") continue;
+      const el = n.closest && n.closest("#inventory [data-row]");
       if (el) return el;
     }
     return null;
   }
+  function hideDragGhost() {
+    const g = $("drag-ghost");
+    if (g) g.classList.add("hidden");
+  }
   function bindInvSlot(el) {
     el.addEventListener("pointerdown", (ev) => {
       if (ev.button && ev.button !== 0) return;
-      ev.preventDefault();
       ev.stopPropagation();
       const row = el.dataset.row;
       const i = Number(el.dataset.i);
-      const sl = state.player && state.player[row] && state.player[row][i];
-      state.drag = { row, i, x: ev.clientX, y: ev.clientY, moved: false, sl };
+      state.drag = {
+        row, i,
+        x: ev.clientX, y: ev.clientY,
+        moved: false,
+        sl: slotItem(row, i),
+        pointerId: ev.pointerId,
+      };
       el.classList.add("lift");
-      try { el.setPointerCapture(ev.pointerId); } catch {}
     });
     el.addEventListener("pointermove", (ev) => {
       const d = state.drag;
       if (!d || d.row !== el.dataset.row || d.i !== Number(el.dataset.i)) return;
-      if (!d.moved && Math.hypot(ev.clientX - d.x, ev.clientY - d.y) > 8) {
+      const dist = Math.hypot(ev.clientX - d.x, ev.clientY - d.y);
+      if (!d.moved && dist > 22) {
         d.moved = true;
         const g = $("drag-ghost");
         if (g && d.sl) {
@@ -3836,44 +3852,70 @@ input, select {
         g.style.top = (ev.clientY - 28) + "px";
       }
     });
-    el.addEventListener("pointerup", (ev) => finishInvDrag(ev, el));
-    el.addEventListener("pointercancel", (ev) => finishInvDrag(ev, el));
+    el.addEventListener("pointerup", (ev) => finishInvDrag(ev, el, false));
+    el.addEventListener("pointercancel", (ev) => finishInvDrag(ev, el, true));
     el.addEventListener("click", (ev) => {
-      if (state.justDragged) { ev.preventDefault(); ev.stopPropagation(); return; }
-      state.pickSlot = { row: el.dataset.row, i: Number(el.dataset.i) };
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (state.justDragged) return;
+      tapInvSlot(el.dataset.row, Number(el.dataset.i));
     });
   }
-  function finishInvDrag(ev, el) {
+  function tapInvSlot(row, i) {
+    const cur = state.pickSlot;
+    if (cur && (cur.row !== row || cur.i !== i)) {
+      swapSlots(cur.row, cur.i, row, i);
+      state.pickSlot = null;
+      renderInventory();
+      return;
+    }
+    if (cur && cur.row === row && cur.i === i) {
+      state.pickSlot = null;
+      renderInventory();
+      return;
+    }
+    state.pickSlot = { row, i };
+    renderInventory();
+  }
+  function finishInvDrag(ev, el, cancelled) {
     const d = state.drag;
-    const g = $("drag-ghost");
-    if (g) g.classList.add("hidden");
+    hideDragGhost();
     if (el) el.classList.remove("lift");
     state.drag = null;
     if (!d) return;
-    if (!d.moved) return;
+    if (cancelled || !d.moved) return;
     state.justDragged = true;
-    setTimeout(() => { state.justDragged = false; }, 80);
+    setTimeout(() => { state.justDragged = false; }, 120);
     const target = slotFromPoint(ev.clientX, ev.clientY);
     if (target && (target.dataset.row !== d.row || Number(target.dataset.i) !== d.i)) {
       swapSlots(d.row, d.i, target.dataset.row, Number(target.dataset.i));
+      state.pickSlot = null;
       return;
     }
     const inv = $("inventory");
     if (!inv) return;
     const r = inv.getBoundingClientRect();
-    if (ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom) {
-      const sl = state.player[d.row][d.i];
-      if (!sl) return;
-      if (d.row === "hot") { state.hotSel = d.i; dropSelected(); }
-      else {
-        const copy = { ...sl };
-        state.player.bag[d.i] = null;
-        dropItem(copy.id, copy.n, state.player.x, state.player.y, false);
-        if (state.drops.length) state.drops[state.drops.length - 1].stack = copy;
-      }
+    const margin = 36;
+    const outside = ev.clientX < r.left - margin || ev.clientX > r.right + margin ||
+      ev.clientY < r.top - margin || ev.clientY > r.bottom + margin;
+    if (!outside) {
+      state.pickSlot = { row: d.row, i: d.i };
       renderInventory();
-      renderHotbar();
+      return;
     }
+    const sl = slotItem(d.row, d.i);
+    if (!sl) return;
+    const ref = slotRef(d.row, d.i);
+    if (d.row === "hot") { state.hotSel = d.i; dropSelected(); }
+    else if (ref) {
+      const copy = { ...sl };
+      ref.set(null);
+      dropItem(copy.id, copy.n, state.player.x, state.player.y, false);
+      if (state.drops.length) state.drops[state.drops.length - 1].stack = copy;
+    }
+    state.pickSlot = null;
+    renderInventory();
+    renderHotbar();
   }
 
   function slotRef(row, i) {
@@ -3944,20 +3986,8 @@ input, select {
   }
   $("inventory").addEventListener("click", (e) => {
     if (e.target.id === "inventory" && state.pickSlot) {
-      const sl = state.player[state.pickSlot.row][state.pickSlot.i];
-      if (sl) {
-        state.hotSel = state.pickSlot.row === "hot" ? state.pickSlot.i : state.hotSel;
-        if (state.pickSlot.row === "hot") dropSelected();
-        else {
-          const copy = { ...sl };
-          state.player[state.pickSlot.row][state.pickSlot.i] = null;
-          dropItem(copy.id, copy.n, state.player.x, state.player.y, false);
-          state.drops[state.drops.length - 1].stack = copy;
-          renderInventory();
-          renderHotbar();
-        }
-      }
       state.pickSlot = null;
+      renderInventory();
     }
   });
   document.addEventListener("dragend", (e) => {
