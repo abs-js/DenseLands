@@ -746,6 +746,35 @@ input, select {
 #touch-edit { position: relative; height: 220px; background: rgba(0,0,0,0.3); border-radius: 12px; overflow: hidden; }
 .touch-ghost { position: absolute; width: 48px; height: 48px; border-radius: 50%; background: #e0b44b; color: #1b2430; display: flex; align-items: center; justify-content: center; font-weight: 800; }
 
+body.lefty #joy-zone { left: auto; right: 18px; }
+body.lefty #action-btns { right: auto; left: 16px; flex-direction: row-reverse; }
+body.four-finger #btn-inv-touch {
+  position: fixed !important;
+  left: 18px; bottom: 168px;
+}
+body.four-finger #btn-b {
+  position: relative;
+  bottom: 56px;
+  right: -8px;
+}
+body.four-finger.lefty #btn-inv-touch {
+  left: auto; right: 18px;
+}
+body.four-finger.lefty #btn-b {
+  right: 8px;
+}
+.inv-equip {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  grid-template-rows: auto auto auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.inv-equip .eq-slot { min-height: 64px; }
+.inv-row-slots { display: flex; gap: 6px; flex-wrap: wrap; }
+.inv-skill-info { font-size: 13px; line-height: 1.35; color: #f3e2c4; }
+
   </style>
 </head>
 <body>
@@ -801,11 +830,9 @@ input, select {
       </div>
       <div class="inv-layout">
         <div class="inv-left">
-          <h3 data-i18n="inv.slots">8 espaços</h3>
-          <div id="inv-slots" class="icon-grid"></div>
-          <h3>Skill e armadura</h3>
-          <div id="inv-special" class="icon-grid"></div>
-          <p class="pack-note">Uma skill só. Trocar apaga a antiga. Armadura impede nado e deixa mais lento.</p>
+          <div id="inv-slots"></div>
+          <div id="inv-special" class="hidden"></div>
+          <p class="pack-note">Capacete e peitoral à esquerda. Skill embaixo. Barra rápida e saco à direita.</p>
           <p class="pack-note" id="inv-note" data-i18n="inv.note">Toque para selecionar, toque em outro slot para mover. Arraste entre slots. Só dropa se soltar bem fora da mochila.</p>
         </div>
         <div class="inv-right">
@@ -1002,6 +1029,8 @@ input, select {
           <button type="button" class="big-btn" id="btn-controls" type="button">Controles</button>
           <button type="button" class="big-btn ghost" id="btn-look" type="button">Personagem</button>
           <button type="button" class="big-btn ghost" id="btn-ach" type="button">Conquistas</button>
+          <label class="check"><input id="opt-lefty" type="checkbox" /> Modo canhoto (mobile)</label>
+          <label class="check"><input id="opt-four" type="checkbox" /> Modo 4 dedos (mobile)</label>
           <button type="button" class="big-btn ghost" id="btn-fs-menu" data-i18n="menu.fullscreen">Tela cheia</button>
           <button class="big-btn ghost" id="settings-back" type="button" onclick="window.showHome && window.showHome()">Voltar</button>
         </div>
@@ -1138,14 +1167,7 @@ input, select {
     </div>
 
     <div id="hotbar" class="hidden">
-      <div class="quick-grid">
-        <div class="q-helm" id="q-helm"></div>
-        <div class="q-skill-info" id="q-skill-info">sem skill</div>
-        <div class="q-chest" id="q-chest"></div>
-        <div id="hot-slots"></div>
-        <div class="q-skill" id="q-skill"></div>
-        <div id="bag-slots"></div>
-      </div>
+      <div id="hot-slots"></div>
     </div>
 
     <div id="mp-chat" class="hidden">
@@ -1172,7 +1194,7 @@ input, select {
     <div id="drag-ghost" class="hidden"></div>
   </div>
 
-                <script>
+                  <script>
 (() => {
   "use strict";
 
@@ -3264,7 +3286,23 @@ input, select {
     try { return JSON.parse(localStorage.getItem("dl_touch") || "null") || { joy:{x:6,y:68}, a:{x:82,y:76}, b:{x:66,y:76}, inv:{x:8,y:54}, pause:{x:90,y:6} }; }
     catch { return { joy:{x:6,y:68}, a:{x:82,y:76}, b:{x:66,y:76}, inv:{x:8,y:54}, pause:{x:90,y:6} }; }
   }
+  function loadTouchOpts() {
+    try { return JSON.parse(localStorage.getItem("dl_touchopt") || "{}"); } catch { return {}; }
+  }
+  function saveTouchOpts(o) { localStorage.setItem("dl_touchopt", JSON.stringify(o)); }
   function applyTouchLayout() {
+    const opt = loadTouchOpts();
+    document.body.classList.toggle("lefty", !!opt.lefty);
+    document.body.classList.toggle("four-finger", !!opt.four);
+    if ($("opt-lefty")) $("opt-lefty").checked = !!opt.lefty;
+    if ($("opt-four")) $("opt-four").checked = !!opt.four;
+    if (!localStorage.getItem("dl_touch")) {
+      ["joy-zone","btn-a","btn-b","btn-inv-touch","btn-pause"].forEach((id) => {
+        const el = $(id); if (!el) return;
+        el.style.left = el.style.top = el.style.right = el.style.bottom = el.style.position = "";
+      });
+      return;
+    }
     const L = loadTouchLayout();
     const map = { joy: $("joy-zone"), a: $("btn-a"), b: $("btn-b"), inv: $("btn-inv-touch"), pause: $("btn-pause") };
     Object.keys(map).forEach((k) => {
@@ -3520,7 +3558,18 @@ input, select {
   if ($("play-back")) $("play-back").onclick = showHome;
   if ($("btn-offline")) $("btn-offline").onclick = () => renderLoadList();
   if ($("offline-back")) $("offline-back").onclick = () => showPane("menu-play");
-  if ($("btn-settings")) $("btn-settings").onclick = () => showPane("menu-settings");
+  if ($("btn-settings")) $("btn-settings").onclick = () => { showPane("menu-settings"); applyTouchLayout(); };
+  function bindTouchOpt(id, key) {
+    if (!$(id)) return;
+    $(id).onchange = () => {
+      const o = loadTouchOpts();
+      o[key] = !!$(id).checked;
+      saveTouchOpts(o);
+      applyTouchLayout();
+    };
+  }
+  bindTouchOpt("opt-lefty", "lefty");
+  bindTouchOpt("opt-four", "four");
   if ($("settings-back")) $("settings-back").onclick = showHome;
   if ($("btn-look")) $("btn-look").onclick = () => { showPane("menu-look"); renderLookMenu(); };
   if ($("look-back")) $("look-back").onclick = showHome;
@@ -4127,26 +4176,9 @@ input, select {
   }
   function renderHotbar() {
     if (!state.player || !$("hot-slots")) return;
-    const p = state.player;
-    const helm = $("q-helm");
-    const chest = $("q-chest");
-    const skill = $("q-skill");
-    const info = $("q-skill-info");
-    if (helm) { helm.innerHTML = ""; helm.appendChild(miniSlot("helm", 0, "q-helm")); }
-    if (chest) { chest.innerHTML = ""; chest.appendChild(miniSlot("chest", 0, "q-chest")); }
-    if (skill) { skill.innerHTML = ""; skill.appendChild(miniSlot("skill", 0, "q-skill")); }
-    if (info) {
-      const sk = equippedSkill();
-      info.textContent = sk ? (sk.name + " · " + (sk.group || "skill")) : "sem skill";
-    }
     const box = $("hot-slots");
     box.innerHTML = "";
     for (let i = 0; i < HOT_N; i++) box.appendChild(miniSlot("hot", i));
-    const bag = $("bag-slots");
-    if (bag) {
-      bag.innerHTML = "";
-      for (let i = 0; i < BAG_N; i++) bag.appendChild(miniSlot("bag", i));
-    }
   }
 
   // ---------- Inventory / dialog ----------
@@ -4185,21 +4217,29 @@ input, select {
     if (!p) return;
     const box = $("inv-slots") || $("inv-items");
     if (!box) return;
-    const cells = [];
-    (p.hot || []).forEach((s, i) => cells.push({ row: "hot", i, s }));
-    (p.bag || []).forEach((s, i) => cells.push({ row: "bag", i, s }));
     const pick = state.pickSlot;
     const onCls = (row, i) => (pick && pick.row === row && pick.i === i) ? " on" : "";
-    box.innerHTML = cells.map((c) => {
-      if (!c.s) return `<button type="button" class="icon-card empty${onCls(c.row, c.i)}" data-row="${c.row}" data-i="${c.i}">vazio</button>`;
-      const name = (ITEM[c.s.id] && ITEM[c.s.id].name) || c.s.id;
-      return `<button type="button" class="icon-card${onCls(c.row, c.i)}" data-row="${c.row}" data-i="${c.i}">
-        <img alt="" src="${itemIcon(c.s.id, 44)}">${name}<small>${c.s.n}</small>${barHtml(c.s)}
+    const card = (row, i, s, lab) => {
+      if (!s) return `<button type="button" class="icon-card empty${onCls(row, i)}" data-row="${row}" data-i="${i}">${lab || "vazio"}</button>`;
+      const name = row === "skill" ? skillLabel(s) : ((ITEM[s.id] && ITEM[s.id].name) || s.id);
+      return `<button type="button" class="icon-card${onCls(row, i)}" data-row="${row}" data-i="${i}">
+        <img alt="" src="${itemIcon(s.id, 44)}">${name}<small>${s.n != null ? s.n : (lab || "")}</small>${barHtml(s)}
       </button>`;
-    }).join("");
+    };
+    const sk = equippedSkill();
+    box.innerHTML = `
+      <div class="inv-equip">
+        <div>${card("helm", 0, p.helm, "Capacete")}</div>
+        <div class="inv-skill-info">${sk ? (sk.name + " — " + (sk.group || "skill") + " " + (sk.tier || "")) : "Sem skill equipada. Revela uma Unknown skill na bancada de skill."}</div>
+        <div>${card("chest", 0, p.chest, "Peitoral")}</div>
+        <div class="inv-row-slots">${(p.hot || []).map((s, i) => card("hot", i, s, "R"+(i+1))).join("")}</div>
+        <div>${card("skill", 0, p.skill, "Skill")}</div>
+        <div class="inv-row-slots">${(p.bag || []).map((s, i) => card("bag", i, s, "S"+(i+1))).join("")}</div>
+      </div>`;
     box.querySelectorAll("[data-row]").forEach((el) => bindInvSlot(el));
     const spec = $("inv-special");
-    if (spec) {
+    if (spec) { spec.innerHTML = ""; }
+    if (false && spec) {
       const rows = [
         { row: "skill", s: p.skill, lab: "Skill" },
         { row: "helm", s: p.helm, lab: "Capacete" },
@@ -6354,7 +6394,7 @@ input, select {
     if (w) w.classList.remove("hidden");
   }
 })();
-// se você achar esta linha é porque você está tentando roubar meu jogo |:
+
   </script>
 </body>
 </html>
