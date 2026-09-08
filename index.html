@@ -900,7 +900,7 @@ input, select {
           <p data-i18n="menu.tag">RPG de mundo aberto · seed · offline</p>
         </div>
 
-        <div id="menu-welcome">
+        <div id="menu-welcome" class="hidden">
           <h2>Você é novo?</h2>
           <p class="story">Acho que sim. Vai logar ou é realmente novo?</p>
           <button class="big-btn" id="wel-new" type="button">Sou novo</button>
@@ -963,8 +963,8 @@ input, select {
         <div id="menu-home" class="hidden">
           <p class="tiny">Menu inicial</p>
           <p class="tiny" id="home-player"></p>
-          <button class="big-btn" id="btn-play" type="button">Jogar</button>
-          <button class="big-btn ghost" id="btn-settings" type="button">Configurações</button>
+          <button class="big-btn" id="btn-play" type="button" onclick="window.showPane && window.showPane('menu-play')">Jogar</button>
+          <button class="big-btn ghost" id="btn-settings" type="button" onclick="window.showPane && window.showPane('menu-settings')">Configurações</button>
         </div>
 
         <div id="menu-ach" class="hidden">
@@ -975,9 +975,9 @@ input, select {
         </div>
 
         <div id="menu-play" class="hidden">
-          <button class="big-btn" id="btn-offline" type="button">Mundos</button>
-          <button class="big-btn ghost" id="btn-online" type="button">Servidores</button>
-          <button class="big-btn ghost" id="play-back" type="button">Voltar</button>
+          <button class="big-btn" id="btn-offline" type="button" onclick="window.showPane && window.showPane('menu-offline')">Mundos</button>
+          <button class="big-btn ghost" id="btn-online" type="button" onclick="window.showPane && window.showPane('menu-online')">Servidores</button>
+          <button class="big-btn ghost" id="play-back" type="button" onclick="window.showHome && window.showHome()">Voltar</button>
         </div>
 
         <div id="menu-offline" class="hidden">
@@ -986,7 +986,7 @@ input, select {
           <input id="import-file" type="file" accept="application/json" hidden />
           <div id="room-list-inline"></div>
           <button class="big-btn ghost" id="btn-load" type="button" style="display:none">Mundos</button>
-          <button class="big-btn ghost" id="offline-back" type="button">Voltar</button>
+          <button class="big-btn ghost" id="offline-back" type="button" onclick="window.showPane && window.showPane('menu-play')">Voltar</button>
           <p class="tiny">Mundos offline ficam neste aparelho.</p>
         </div>
 
@@ -1003,7 +1003,7 @@ input, select {
           <button type="button" class="big-btn ghost" id="btn-look" type="button">Personagem</button>
           <button type="button" class="big-btn ghost" id="btn-ach" type="button">Conquistas</button>
           <button type="button" class="big-btn ghost" id="btn-fs-menu" data-i18n="menu.fullscreen">Tela cheia</button>
-          <button class="big-btn ghost" id="settings-back" type="button">Voltar</button>
+          <button class="big-btn ghost" id="settings-back" type="button" onclick="window.showHome && window.showHome()">Voltar</button>
         </div>
         <div id="menu-controls" class="hidden">
           <h2>Controles</h2>
@@ -1077,7 +1077,7 @@ input, select {
           </label>
           <div class="row">
             <button class="big-btn" type="submit">Entrar no mundo</button>
-            <button class="big-btn ghost" type="button" id="create-back">Voltar</button>
+            <button class="big-btn ghost" type="button" id="create-back" onclick="window.showPane && window.showPane('menu-offline')">Voltar</button>
           </div>
         </form>
 
@@ -1098,7 +1098,7 @@ input, select {
           </div>
           <p class="tiny" id="mp-status">As 5 salas do servidor.</p>
           <div id="mp-slots"></div>
-          <button class="big-btn ghost" type="button" id="online-back">Voltar</button>
+          <button class="big-btn ghost" type="button" id="online-back" onclick="window.showPane && window.showPane('menu-play')">Voltar</button>
         </div>
 
         <form id="form-pass" class="hidden">
@@ -1172,7 +1172,7 @@ input, select {
     <div id="drag-ghost" class="hidden"></div>
   </div>
 
-              <script>
+                <script>
 (() => {
   "use strict";
 
@@ -2617,19 +2617,7 @@ input, select {
     return false;
   }
   function dlOpenHome() {
-    try { paintMenuBiome(); } catch {}
-    try { updateAccountHud(); } catch {}
-    ["menu-welcome","menu-reg-user","menu-reg-pass","menu-reg-confirm","menu-login","menu-account","menu-play","menu-offline","menu-settings","menu-controls","menu-look","menu-online","menu-ach","form-create","menu-load","form-pass"].forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) { el.classList.add("hidden"); el.style.display = "none"; }
-    });
-    const home = document.getElementById("menu-home");
-    if (home) {
-      home.classList.remove("hidden");
-      home.style.display = "block";
-    }
-    const menu = document.getElementById("menu");
-    if (menu) menu.classList.remove("hidden");
+    showPane("menu-home");
   }
   function dlFinishAccount(user, pass) {
     user = String(user || "").trim();
@@ -3345,19 +3333,32 @@ input, select {
     }
   }
 
+  const MENU_PANES = ["menu-welcome","menu-reg-user","menu-reg-pass","menu-reg-confirm","menu-login","menu-account","menu-home","menu-play","menu-offline","menu-settings","menu-controls","menu-look","menu-online","menu-ach","form-create","menu-load","form-pass"];
   function hideMenuPanes() {
-    ["menu-welcome","menu-reg-user","menu-reg-pass","menu-reg-confirm","menu-login","menu-account","menu-home","menu-play","menu-offline","menu-settings","menu-controls","menu-look","menu-online","menu-ach","form-create","menu-load","form-pass"].forEach((id) => {
-      if ($(id)) $(id).classList.add("hidden");
+    MENU_PANES.forEach((id) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.classList.add("hidden");
+      el.style.display = "";
     });
   }
   function showPane(id) {
     hideMenuPanes();
-    if ($(id)) $(id).classList.remove("hidden");
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove("hidden");
+    el.style.display = "";
+    const menu = document.getElementById("menu");
+    if (menu) { menu.classList.remove("hidden"); menu.style.display = ""; }
+    try { paintMenuBiome(); } catch {}
+    try { if (id === "menu-home") updateAccountHud(); } catch {}
   }
   function showHome() {
     if (!hasAccount()) { showPane("menu-welcome"); return; }
-    dlOpenHome();
+    showPane("menu-home");
   }
+  window.showPane = showPane;
+  window.showHome = showHome;
   function paintMenuBiome() {
     const el = $("menu-biome");
     if (!el) return;
@@ -6353,7 +6354,7 @@ input, select {
     if (w) w.classList.remove("hidden");
   }
 })();
-
+// se você achar esta linha é porque você está tentando roubar meu jogo |:
   </script>
 </body>
 </html>
