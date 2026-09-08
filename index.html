@@ -695,6 +695,57 @@ input, select {
 }
 #home-player { text-align: center; margin-bottom: 8px; }
 
+#menu-biome {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: 48px 48px;
+  opacity: 0.55;
+}
+#menu-biome.bio-plains { background-image: linear-gradient(#4f8f45 50%, #5b9a4c 50%), linear-gradient(90deg, #4f8f45 50%, #5b9a4c 50%); background-size: 48px 48px; }
+#menu-biome.bio-forest { background-image: linear-gradient(#2f6230 50%, #3d7a3a 50%), linear-gradient(90deg, #2f6230 50%, #3d7a3a 50%); background-size: 48px 48px; }
+#menu-biome.bio-jungle { background-image: linear-gradient(#1e5a28 50%, #2f7a38 50%), linear-gradient(90deg, #1e5a28 50%, #2f7a38 50%); background-size: 48px 48px; }
+#menu-biome.bio-swamp { background-image: linear-gradient(#3a5a28 50%, #2a4030 50%), linear-gradient(90deg, #4a6a20 50%, #1a3028 50%); background-size: 48px 48px; }
+.menu-card { position: relative; z-index: 1; }
+.story { line-height: 1.45; margin: 8px 0 14px; }
+.warn { color: #ffb0a0; }
+.pass-row { display: flex; gap: 12px; align-items: flex-end; }
+.pass-row label { flex: 1; }
+#plant-pot { width: 64px; height: 72px; position: relative; flex: 0 0 64px; }
+#plant-pot .pot { position: absolute; bottom: 0; left: 12px; width: 40px; height: 18px; background: #8a4a2a; border-radius: 0 0 10px 10px; }
+#plant-pot .stem { position: absolute; bottom: 16px; left: 30px; width: 4px; height: 28px; background: #3d7a3a; }
+#plant-pot .leaf { position: absolute; bottom: 32px; width: 16px; height: 10px; background: #5b9a4c; border-radius: 50%; }
+#plant-pot .leaf.l { left: 14px; }
+#plant-pot .leaf.r { left: 34px; }
+#plant-pot .bars, #plant-pot .vault { display: none; position: absolute; inset: 6px 8px 16px; }
+#plant-pot.wilt .stem { height: 14px; transform: rotate(18deg); background: #6a5a28; }
+#plant-pot.wilt .leaf { background: #8a7a40; bottom: 22px; }
+#plant-pot.ok .stem { height: 28px; }
+#plant-pot.bars .bars { display: block; background: repeating-linear-gradient(90deg, transparent 0 6px, #889 6px 8px); border: 2px solid #889; }
+#plant-pot.vault .vault { display: block; background: #2a3038; border: 3px solid #c9a227; border-radius: 8px; }
+#plant-pot.vault .vault::after { content: ""; position: absolute; left: 50%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; border: 2px solid #e0b44b; }
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: 58px minmax(180px, 1fr);
+  grid-template-rows: auto auto auto;
+  gap: 6px;
+  background: rgba(42, 22, 12, 0.78);
+  border: 3px solid #c9a36a;
+  border-radius: 14px;
+  padding: 8px;
+  align-items: center;
+}
+.q-helm, .q-chest, .q-skill, .hot-slot {
+  width: 58px; height: 58px;
+}
+.q-skill-info { font-size: 12px; line-height: 1.3; color: #f3e2c4; padding: 0 6px; }
+#hot-slots, #bag-slots { display: flex; gap: 6px; }
+.pips.armor .pip { background: #3a3a48; }
+.pips.armor .pip.on { background: #8aa0c8; }
+.pips.armor .pip.half { background: linear-gradient(90deg, #8aa0c8 50%, #3a3a48 50%); }
+#armor-wrap { position: fixed; top: 86px; left: 12px; pointer-events: none; }
+#touch-edit { position: relative; height: 220px; background: rgba(0,0,0,0.3); border-radius: 12px; overflow: hidden; }
+.touch-ghost { position: absolute; width: 48px; height: 48px; border-radius: 50%; background: #e0b44b; color: #1b2430; display: flex; align-items: center; justify-content: center; font-weight: 800; }
+
   </style>
 </head>
 <body>
@@ -715,6 +766,9 @@ input, select {
       </div>
       <div id="hunger-wrap">
         <div id="hunger-pips" class="pips hunger"></div>
+      </div>
+      <div id="armor-wrap">
+        <div id="armor-pips" class="pips armor"></div>
       </div>
       <div id="air-wrap" class="hidden">
         <div id="air-bar"><div id="air-fill"></div></div>
@@ -755,8 +809,13 @@ input, select {
           <p class="pack-note" id="inv-note" data-i18n="inv.note">Toque para selecionar, toque em outro slot para mover. Arraste entre slots. Só dropa se soltar bem fora da mochila.</p>
         </div>
         <div class="inv-right">
-          <h3>Craft rápido</h3>
-          <p class="pack-note">Só madeira e bancada. O resto nasce na bancada colocada.</p>
+          <h3>Craft</h3>
+          <div class="craft-tabs" id="craft-tabs">
+            <button type="button" data-tab="tudo" class="on">Tudo</button>
+            <button type="button" data-tab="construcao">Construção</button>
+            <button type="button" data-tab="ferramentas">Ferramentas</button>
+            <button type="button" data-tab="utensilios">Utensílios</button>
+          </div>
           <div id="recipes" class="icon-grid"></div>
         </div>
       </div>
@@ -782,6 +841,12 @@ input, select {
         <button class="close-x" id="bench-close" type="button">×</button>
       </div>
       <p class="pack-note" data-i18n="bench.note">Todas as receitas da bancada. Precisa dos itens no saco ou no atalho.</p>
+      <div class="craft-tabs" id="bench-tabs">
+        <button type="button" data-tab="tudo" class="on">Tudo</button>
+        <button type="button" data-tab="construcao">Construção</button>
+        <button type="button" data-tab="ferramentas">Ferramentas</button>
+        <button type="button" data-tab="utensilios">Utensílios</button>
+      </div>
       <div id="bench-recipes" class="icon-grid"></div>
     </div>
 
@@ -827,6 +892,7 @@ input, select {
 
     <!-- Menu -->
     <div id="menu">
+      <div id="menu-biome" class="bio-plains"></div>
       <div class="menu-card">
         <div class="logo">
           <div class="logo-mark">✦</div>
@@ -834,22 +900,71 @@ input, select {
           <p data-i18n="menu.tag">RPG de mundo aberto · seed · offline</p>
         </div>
 
-        <div id="menu-account" class="hidden">
-          <h2>Sua conta</h2>
-          <p class="tiny">Crie um nome antes de jogar. Offline guarda neste aparelho; online tenta o servidor.</p>
-          <label>Usuário <input id="acc-user" maxlength="16" placeholder="3-16 letras" /></label>
-          <label>Senha <input id="acc-pass" type="password" maxlength="32" placeholder="mín. 4" /></label>
-          <p class="tiny" id="acc-status"></p>
-          <button class="big-btn" id="acc-create" type="button">Criar conta</button>
-          <button class="big-btn ghost" id="acc-login" type="button">Já tenho conta</button>
+        <div id="menu-welcome">
+          <h2>Você é novo?</h2>
+          <p class="story">Acho que sim. Vai logar ou é realmente novo?</p>
+          <button class="big-btn" id="wel-new" type="button">Sou novo</button>
+          <button class="big-btn ghost" id="wel-old" type="button">Já tenho conta</button>
         </div>
-
+        <div id="menu-reg-user" class="hidden">
+          <h2>Sabia!</h2>
+          <p class="story">Bem... Coloque aqui seu nome de usuário.</p>
+          <p class="tiny">Apenas letras, números e _. Proibido nomes inapropriados. Boa sorte ao escolher — vê se não pega um repetido.</p>
+          <label>Usuário <input id="reg-user" maxlength="16" placeholder="ex: Mira_02" /></label>
+          <p class="tiny warn" id="reg-user-err"></p>
+          <div class="row">
+            <button class="big-btn" id="reg-user-next" type="button">Continuar</button>
+            <button class="big-btn ghost" id="reg-user-back" type="button">Voltar</button>
+          </div>
+        </div>
+        <div id="menu-reg-pass" class="hidden">
+          <h2>Agora a senha</h2>
+          <p class="story">Coloca uma senha bem segura para sua conta.</p>
+          <div class="pass-row">
+            <label>Senha <input id="reg-pass" type="password" maxlength="32" /></label>
+            <div id="plant-pot" class="plant wilt" title="segurança">
+              <div class="pot"></div>
+              <div class="stem"></div>
+              <div class="leaf l"></div>
+              <div class="leaf r"></div>
+              <div class="bars"></div>
+              <div class="vault"></div>
+            </div>
+          </div>
+          <p class="tiny" id="pass-str-lab">fraca</p>
+          <div class="row">
+            <button class="big-btn" id="reg-pass-next" type="button">Continuar</button>
+            <button class="big-btn ghost" id="reg-pass-back" type="button">Voltar</button>
+          </div>
+        </div>
+        <div id="menu-reg-confirm" class="hidden">
+          <h2>Repete a senha</h2>
+          <p class="story">Se esquecer é só voltar o passo.</p>
+          <label>Confirmar <input id="reg-pass2" type="password" maxlength="32" /></label>
+          <p class="tiny warn" id="reg-pass-err"></p>
+          <div class="row">
+            <button class="big-btn" id="reg-done" type="button" onclick="window.dlFinishAccount && window.dlFinishAccount((document.getElementById('reg-user')||{}).value, (document.getElementById('reg-pass')||{}).value)">Criar conta</button>
+            <button class="big-btn ghost" id="reg-conf-back" type="button">Voltar</button>
+          </div>
+        </div>
+        <div id="menu-login" class="hidden">
+          <h2>Então loga</h2>
+          <p class="story">Coloca seu usuário e senha. Se não souber a senha, será obrigado a criar outra conta.</p>
+          <label>Usuário <input id="log-user" maxlength="16" /></label>
+          <label>Senha <input id="log-pass" type="password" maxlength="32" /></label>
+          <p class="tiny warn" id="log-err"></p>
+          <div class="row">
+            <button class="big-btn" id="log-go" type="button" onclick="window.dlFinishAccount && window.dlFinishAccount((document.getElementById('log-user')||{}).value, (document.getElementById('log-pass')||{}).value)">Entrar</button>
+            <button class="big-btn ghost" id="log-back" type="button">Voltar</button>
+          </div>
+          <button class="big-btn ghost" id="log-forgot" type="button">Não sei a senha — criar outra conta</button>
+        </div>
+        <div id="menu-account" class="hidden"></div>
         <div id="menu-home" class="hidden">
+          <p class="tiny">Menu inicial</p>
           <p class="tiny" id="home-player"></p>
           <button class="big-btn" id="btn-play" type="button">Jogar</button>
-          <button class="big-btn ghost" id="btn-ach" type="button">Conquistas</button>
           <button class="big-btn ghost" id="btn-settings" type="button">Configurações</button>
-          <button class="big-btn ghost" id="btn-look" type="button">Personagem</button>
         </div>
 
         <div id="menu-ach" class="hidden">
@@ -860,18 +975,19 @@ input, select {
         </div>
 
         <div id="menu-play" class="hidden">
-          <button class="big-btn" id="btn-online" type="button">Online</button>
-          <button class="big-btn ghost" id="btn-offline" type="button">Offline</button>
+          <button class="big-btn" id="btn-offline" type="button">Mundos</button>
+          <button class="big-btn ghost" id="btn-online" type="button">Servidores</button>
           <button class="big-btn ghost" id="play-back" type="button">Voltar</button>
         </div>
 
         <div id="menu-offline" class="hidden">
-          <button class="big-btn" id="btn-load" type="button">Mundos</button>
-          <button class="big-btn ghost" id="btn-create" type="button">Novo mundo</button>
+          <button class="big-btn" id="btn-create" type="button">Novo mundo</button>
           <button class="big-btn ghost" id="btn-import" type="button">Importar mapa</button>
           <input id="import-file" type="file" accept="application/json" hidden />
+          <div id="room-list-inline"></div>
+          <button class="big-btn ghost" id="btn-load" type="button" style="display:none">Mundos</button>
           <button class="big-btn ghost" id="offline-back" type="button">Voltar</button>
-          <p class="tiny" data-i18n="menu.offline">Mundos offline ficam neste aparelho. Dá para exportar o mapa de dentro do jogo.</p>
+          <p class="tiny">Mundos offline ficam neste aparelho.</p>
         </div>
 
         <div id="menu-settings" class="hidden">
@@ -883,9 +999,24 @@ input, select {
               <option value="es">Español</option>
             </select>
           </div>
+          <button type="button" class="big-btn" id="btn-controls" type="button">Controles</button>
+          <button type="button" class="big-btn ghost" id="btn-look" type="button">Personagem</button>
+          <button type="button" class="big-btn ghost" id="btn-ach" type="button">Conquistas</button>
           <button type="button" class="big-btn ghost" id="btn-fs-menu" data-i18n="menu.fullscreen">Tela cheia</button>
-          <p class="tiny">O visual do boneco fica em Personagem. O servidor online é denselandsbackend.onrender.com.</p>
           <button class="big-btn ghost" id="settings-back" type="button">Voltar</button>
+        </div>
+        <div id="menu-controls" class="hidden">
+          <h2>Controles</h2>
+          <div id="binds-kb" class="hidden">
+            <p class="tiny">Toque na ação e aperte a tecla nova.</p>
+            <div id="bind-list"></div>
+          </div>
+          <div id="binds-touch" class="hidden">
+            <p class="tiny">Arraste os botões. Salva neste aparelho.</p>
+            <div id="touch-edit"></div>
+            <button class="big-btn ghost" id="touch-reset" type="button">Resetar posições</button>
+          </div>
+          <button class="big-btn ghost" id="controls-back" type="button">Voltar</button>
         </div>
 
         <div id="menu-look" class="hidden">
@@ -1007,7 +1138,14 @@ input, select {
     </div>
 
     <div id="hotbar" class="hidden">
-      <div id="hot-slots"></div>
+      <div class="quick-grid">
+        <div class="q-helm" id="q-helm"></div>
+        <div class="q-skill-info" id="q-skill-info">sem skill</div>
+        <div class="q-chest" id="q-chest"></div>
+        <div id="hot-slots"></div>
+        <div class="q-skill" id="q-skill"></div>
+        <div id="bag-slots"></div>
+      </div>
     </div>
 
     <div id="mp-chat" class="hidden">
@@ -1034,7 +1172,7 @@ input, select {
     <div id="drag-ghost" class="hidden"></div>
   </div>
 
-      <script>
+              <script>
 (() => {
   "use strict";
 
@@ -1050,7 +1188,7 @@ input, select {
       "hud.air": "ar",
       "inv.title": "Mochila",
       "inv.slots": "8 espaços",
-      "inv.note": "Toque para selecionar, toque em outro slot para mover. Arraste entre slots. Só dropa se soltar bem fora da mochila.",
+      "inv.note": "Arraste para mover. Q ou arraste para fora para soltar no chão.",
       "tab.all": "Todos", "tab.tools": "Ferramentas", "tab.build": "Construção", "tab.util": "Utilitários",
       "filt.all": "Todos", "filt.ok": "Craftável", "filt.miss": "Falta algo",
       "chest.title": "Baú", "chest.inside": "Dentro", "chest.bag": "Saco",
@@ -1270,6 +1408,10 @@ input, select {
     peitoral_ferro: { name: "Peitoral de ferro", stack: 1, armor: "chest", def: 4 },
     capacete_ferro: { name: "Capacete de ferro", stack: 1, armor: "helm", def: 3 },
     cachecol: { name: "Cachecol", stack: 1, armor: "helm", def: 0, light: true },
+    flor_vermelha: { name: "Flor vermelha", stack: STACK, solid: false, hp: 1 },
+    flor_azul: { name: "Flor azul", stack: STACK, solid: false, hp: 1 },
+    flor_amarela: { name: "Flor amarela", stack: STACK, solid: false, hp: 1 },
+    flor_verde: { name: "Flor verde", stack: STACK, solid: false, hp: 1 },
     bancada: { name: "Bancada", stack: STACK, solid: true, hp: 5 },
     cama: { name: "Cama", stack: STACK, solid: true, hp: 6 },
     carne_crua: { name: "Carne crua", stack: STACK },
@@ -1356,6 +1498,7 @@ input, select {
     cacador: { name: "Caçador", xp: 20, need: [], desc: "Derrote um monstro.", group: "avancado" },
     vassoura: { name: "Passando a vassoura", xp: 100, need: ["cacador"], desc: "Limpe uma masmorra.", group: "avancado", rare: true },
     mina_limpa: { name: "Abandonar mina", xp: 120, need: ["cacador"], desc: "Limpe uma mina.", group: "avancado", rare: true },
+    quao_raro: { name: "Quão raro é", xp: 40, need: [], desc: "Encontre uma flor azul.", group: "estruturas", rare: true },
   };
 
   const FISTS = { id: "punhos", name: "Punhos", dmg: 2, rate: 450, dur: Infinity, maxDur: Infinity, color: "#e8c4a8", tree: 1, rock: 1, area: 0 };
@@ -1428,15 +1571,22 @@ input, select {
   }
   function biomeAt(tx, ty, seed) {
     seed = seed == null ? (state.room && state.room.seed) || 1 : seed;
-    if (!isLandH(heightAt(tx, ty, seed))) return "ocean";
     const moist = fbm(tx * 0.011, ty * 0.011, seed + 41);
     const heat = fbm(tx * 0.008 + 28, ty * 0.008, seed + 77);
+    if (!isLandH(heightAt(tx, ty, seed))) {
+      if (moist > 0.56 && heat < 0.46) return "swamp";
+      return "ocean";
+    }
+    if (moist > 0.56 && heat < 0.44) return "swamp";
     if (moist > 0.60 && heat > 0.46) return "jungle";
     if (moist > 0.52) return "forest";
     return "plains";
   }
   function biomeLabel(b) {
-    return b === "jungle" ? "Selva" : b === "forest" ? "Floresta densa" : b === "ocean" ? "Mar" : "Planície";
+    return b === "jungle" ? "Selva" : b === "forest" ? "Floresta densa" : b === "swamp" ? "Pântano de slimes" : b === "ocean" ? "Mar" : "Planície";
+  }
+  function isSwampWater(tx, ty) {
+    return tileAt(tx, ty) === TILES.WATER && biomeAt(tx, ty, state.room && state.room.seed) === "swamp";
   }
 
   // ---------- DOM ----------
@@ -1799,9 +1949,9 @@ input, select {
           }
         } else if (t === TILES.GRASS) {
           const bio = biomeAt(tx, ty, seed);
-          const treeCut = bio === "jungle" ? 0.48 : bio === "forest" ? 0.58 : 0.88;
-          const rockCut = bio === "jungle" ? 0.90 : bio === "plains" ? 0.978 : 0.97;
-          const oreCut = bio === "jungle" ? 0.955 : 0.992;
+          const treeCut = bio === "jungle" ? 0.48 : bio === "forest" ? 0.58 : bio === "swamp" ? 0.94 : 0.88;
+          const rockCut = bio === "jungle" ? 0.90 : bio === "swamp" ? 0.992 : bio === "plains" ? 0.978 : 0.97;
+          const oreCut = bio === "jungle" ? 0.955 : bio === "swamp" ? 0.999 : 0.992;
           if (hash2(tx, ty, seed + 21) > treeCut) {
             trees.push({ tx, ty, hp: bio === "jungle" ? 5 : 4 });
           } else if (hash2(tx, ty, seed + 44) > rockCut) {
@@ -1809,6 +1959,12 @@ input, select {
           } else if (hash2(tx, ty, seed + 70) > oreCut) {
             const roll = hash2(tx, ty, seed + 71);
             ores.push({ tx, ty, id: roll > 0.7 ? "ferro_bruto" : roll > 0.4 ? "cobre_bruto" : "ouro_bruto", hp: 8 });
+          } else if (bio === "plains" && hash2(tx, ty, seed + 121) > 0.96) {
+            const fr = hash2(tx, ty, seed + 122);
+            const fid = fr > 0.97 ? "flor_azul" : fr > 0.72 ? "flor_vermelha" : fr > 0.44 ? "flor_amarela" : "flor_verde";
+            // flowers stamped after chunk exists
+            tiles._flowers = tiles._flowers || [];
+            tiles._flowers.push({ tx, ty, id: fid });
           }
         }
       }
@@ -1830,6 +1986,16 @@ input, select {
       }
     }
     const chunk = { cx, cy, tiles, trees, rocks, ores, enemies: [], placed: [], animals };
+    if (tiles._flowers) {
+      tiles._flowers.forEach((f) => chunk.placed.push({ tx: f.tx, ty: f.ty, id: f.id, hp: 1 }));
+      delete tiles._flowers;
+    }
+    if (biomeAt(cx * CHUNK + 8, cy * CHUNK + 8, seed) === "swamp" && hash2(cx, cy, seed + 33) > 0.45) {
+      const ax = (cx * CHUNK + 4) * TILE + 20, ay = (cy * CHUNK + 4) * TILE + 20;
+      const sl = makeEnemy(ax, ay, seed + cx * 17 + cy);
+      sl.kind = "gosma"; sl.hp = sl.maxHp = 10; sl.spd = 28; sl.dmg = 2; sl.gold = 2;
+      chunk.enemies.push(sl);
+    }
     stampStructures(chunk);
     state.chunks.set(key, chunk);
     replayEditsOnChunk(chunk);
@@ -2147,8 +2313,10 @@ input, select {
       if (t === TILES.WALL) return true;
       if (treeAt(tx, ty) || rockAt(tx, ty) || oreAt(tx, ty)) return true;
       if (pl && pl.id === "porta" && pl.open) { /* passa */ }
+      else if (pl && String(pl.id).indexOf("flor_") === 0) { /* passa */ }
       else if (pl && pl.id !== "bote" && pl.id !== "tocha" && pl.id !== "placa" && !onWoodDock(tx, ty)) return true;
       if (t === TILES.WATER) {
+        if (isSwampWater(tx, ty)) return true;
         if (onBoatTile(tx, ty) || onWoodDock(tx, ty) || (opt.boat && opt.fromBoat)) continue;
         if (state.room && state.room.hardcore) return true;
         if (wearingArmor()) return true;
@@ -2440,9 +2608,61 @@ input, select {
     updateAccountHud();
   }
   function hasAccount() {
-    const p = loadProfile();
-    return !!(p && p.name);
+    if (state && state.accountName) return true;
+    try {
+      const p = loadProfile();
+      if (p && p.name) return true;
+      if (localStorage.getItem("dl_name")) return true;
+    } catch {}
+    return false;
   }
+  function dlOpenHome() {
+    try { paintMenuBiome(); } catch {}
+    try { updateAccountHud(); } catch {}
+    ["menu-welcome","menu-reg-user","menu-reg-pass","menu-reg-confirm","menu-login","menu-account","menu-play","menu-offline","menu-settings","menu-controls","menu-look","menu-online","menu-ach","form-create","menu-load","form-pass"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) { el.classList.add("hidden"); el.style.display = "none"; }
+    });
+    const home = document.getElementById("menu-home");
+    if (home) {
+      home.classList.remove("hidden");
+      home.style.display = "block";
+    }
+    const menu = document.getElementById("menu");
+    if (menu) menu.classList.remove("hidden");
+  }
+  function dlFinishAccount(user, pass) {
+    user = String(user || "").trim();
+    pass = String(pass || "");
+    const err = document.getElementById("reg-pass-err") || document.getElementById("log-err");
+    if (!/^[a-zA-Z0-9_]{3,16}$/.test(user)) {
+      if (err) err.textContent = "Usuário inválido.";
+      return false;
+    }
+    if (pass.length < 4) {
+      if (err) err.textContent = "Senha curta demais.";
+      return false;
+    }
+    state.accountName = user;
+    try {
+      saveUserLocal(user, pass);
+    } catch {}
+    try {
+      const local = loadProfile();
+      local.name = user;
+      saveProfile(local);
+      localStorage.setItem("dl_name", user);
+    } catch {}
+    if ($("home-player")) $("home-player").textContent = user + " · conta local";
+    dlOpenHome();
+    try {
+      if ($("mp-user")) $("mp-user").value = user;
+      if ($("mp-pass")) $("mp-pass").value = pass;
+    } catch {}
+    return true;
+  }
+  window.dlFinishAccount = dlFinishAccount;
+  window.dlOpenHome = dlOpenHome;
   function parentsOk(id, ach) {
     const def = ACH[id];
     return !!(def && (def.need || []).every((n) => ach[n]));
@@ -2645,6 +2865,7 @@ input, select {
 
   function addItem(id, n) {
     id = ITEM_ALIAS[id] || id;
+    if (id === "flor_azul") grantAch("quao_raro");
     let left = n;
     const p = state.player;
     const def = ITEM[id] || { stack: STACK };
@@ -2970,17 +3191,34 @@ input, select {
     });
   }
 
+  const KONAMI = ["arrowup","arrowup","arrowdown","arrowdown","arrowleft","arrowright","arrowleft","arrowright","b","a"];
+  function armKonami() {
+    state.konamiBuf = [];
+    const onk = (e) => {
+      const k = e.key.toLowerCase();
+      state.konamiBuf.push(k);
+      state.konamiBuf = state.konamiBuf.slice(-KONAMI.length);
+      if (state.konamiBuf.join(",") === KONAMI.join(",")) {
+        state.konamiGift = true;
+        showMsg("Um cachecol cai do céu.");
+      }
+    };
+    window.addEventListener("keydown", onk);
+    state._konamiFn = onk;
+  }
   function showLoading(then) {
     const el = $("loading");
     if (!el) { then(); return; }
     $("menu").classList.add("hidden");
     el.classList.remove("hidden");
     el.classList.remove("grown");
+    armKonami();
     requestAnimationFrame(() => el.classList.add("grown"));
     setTimeout(() => {
       el.classList.add("hidden");
+      if (state._konamiFn) window.removeEventListener("keydown", state._konamiFn);
       then();
-    }, 1550);
+    }, 1800);
   }
 
   function enterGame() {
@@ -2992,8 +3230,14 @@ input, select {
     $("hotbar").classList.remove("hidden");
     if ($("death")) $("death").classList.add("hidden");
     state.dead = false;
+    if (state.konamiGift && state.player && countItem("cachecol") < 1) {
+      addItem("cachecol", 1);
+      state.konamiGift = false;
+      showMsg("Konami: você ganhou um cachecol.");
+    }
     renderHotbar();
     applyI18n();
+    applyTouchLayout();
     $("room-pill").textContent = state.room.name + (state.room.type === "private" ? " 🔒" : " 🌐");
     $("seed-pill").textContent = (state.room.hardcore ? "HARDCORE · " : "") + "seed " + state.room.seed;
     updateHud();
@@ -3022,8 +3266,87 @@ input, select {
   }
 
   // ---------- Menu UI ----------
+  const DEFAULT_BINDS = { up: "ArrowUp", down: "ArrowDown", left: "ArrowLeft", right: "ArrowRight", attack: "z", use: "x", inv: "c", drop: "q" };
+  function loadBinds() {
+    try { return Object.assign({}, DEFAULT_BINDS, JSON.parse(localStorage.getItem("dl_binds") || "{}")); }
+    catch { return Object.assign({}, DEFAULT_BINDS); }
+  }
+  function saveBinds(b) { localStorage.setItem("dl_binds", JSON.stringify(b)); }
+  function loadTouchLayout() {
+    try { return JSON.parse(localStorage.getItem("dl_touch") || "null") || { joy:{x:6,y:68}, a:{x:82,y:76}, b:{x:66,y:76}, inv:{x:8,y:54}, pause:{x:90,y:6} }; }
+    catch { return { joy:{x:6,y:68}, a:{x:82,y:76}, b:{x:66,y:76}, inv:{x:8,y:54}, pause:{x:90,y:6} }; }
+  }
+  function applyTouchLayout() {
+    const L = loadTouchLayout();
+    const map = { joy: $("joy-zone"), a: $("btn-a"), b: $("btn-b"), inv: $("btn-inv-touch"), pause: $("btn-pause") };
+    Object.keys(map).forEach((k) => {
+      const el = map[k]; if (!el || !L[k]) return;
+      el.style.position = "fixed";
+      el.style.left = L[k].x + "vw";
+      el.style.top = L[k].y + "vh";
+      el.style.right = "auto";
+      el.style.bottom = "auto";
+    });
+  }
+  function renderControls() {
+    const touch = isTouchDevice();
+    if ($("binds-kb")) $("binds-kb").classList.toggle("hidden", touch);
+    if ($("binds-touch")) $("binds-touch").classList.toggle("hidden", !touch);
+    if (!touch) {
+      const binds = loadBinds();
+      const labels = { up:"Andar cima", down:"Andar baixo", left:"Andar esq", right:"Andar dir", attack:"Atacar", use:"Usar", inv:"Inventário", drop:"Dropar" };
+      $("bind-list").innerHTML = Object.keys(labels).map((k) =>
+        '<button type="button" class="shop-row" data-bind="'+k+'"><span class="shop-lab">'+labels[k]+'</span><small>'+binds[k]+'</small></button>'
+      ).join("");
+      $("bind-list").querySelectorAll("[data-bind]").forEach((b) => {
+        b.onclick = () => {
+          b.querySelector("small").textContent = "aperte...";
+          const once = (ev) => {
+            ev.preventDefault();
+            binds[b.dataset.bind] = ev.key;
+            saveBinds(binds);
+            window.removeEventListener("keydown", once, true);
+            renderControls();
+          };
+          window.addEventListener("keydown", once, true);
+        };
+      });
+    } else {
+      const box = $("touch-edit");
+      const L = loadTouchLayout();
+      box.innerHTML = "";
+      ["joy","a","b","inv","pause"].forEach((k) => {
+        const g = document.createElement("div");
+        g.className = "touch-ghost";
+        g.textContent = k.toUpperCase();
+        g.style.left = L[k].x + "%";
+        g.style.top = L[k].y + "%";
+        g.onpointerdown = (ev) => {
+          ev.preventDefault();
+          const move = (e) => {
+            const r = box.getBoundingClientRect();
+            L[k].x = Math.max(0, Math.min(90, (e.clientX - r.left) / r.width * 100));
+            L[k].y = Math.max(0, Math.min(90, (e.clientY - r.top) / r.height * 100));
+            g.style.left = L[k].x + "%";
+            g.style.top = L[k].y + "%";
+          };
+          const up = () => {
+            window.removeEventListener("pointermove", move);
+            window.removeEventListener("pointerup", up);
+            localStorage.setItem("dl_touch", JSON.stringify(L));
+            applyTouchLayout();
+          };
+          window.addEventListener("pointermove", move);
+          window.addEventListener("pointerup", up);
+        };
+        box.appendChild(g);
+      });
+      if ($("touch-reset")) $("touch-reset").onclick = () => { localStorage.removeItem("dl_touch"); renderControls(); applyTouchLayout(); };
+    }
+  }
+
   function hideMenuPanes() {
-    ["menu-account","menu-home","menu-play","menu-offline","menu-settings","menu-look","menu-online","menu-ach","form-create","menu-load","form-pass"].forEach((id) => {
+    ["menu-welcome","menu-reg-user","menu-reg-pass","menu-reg-confirm","menu-login","menu-account","menu-home","menu-play","menu-offline","menu-settings","menu-controls","menu-look","menu-online","menu-ach","form-create","menu-load","form-pass"].forEach((id) => {
       if ($(id)) $(id).classList.add("hidden");
     });
   }
@@ -3032,9 +3355,54 @@ input, select {
     if ($(id)) $(id).classList.remove("hidden");
   }
   function showHome() {
-    if (!hasAccount()) { showPane("menu-account"); return; }
-    updateAccountHud();
-    showPane("menu-home");
+    if (!hasAccount()) { showPane("menu-welcome"); return; }
+    dlOpenHome();
+  }
+  function paintMenuBiome() {
+    const el = $("menu-biome");
+    if (!el) return;
+    const list = ["bio-plains","bio-forest","bio-jungle","bio-swamp"];
+    const cur = list[(Date.now() / 40000 | 0) % list.length];
+    el.className = cur;
+  }
+  const BAD_NAMES = ["admin","sexo","porra","puta","caralho","merda","nazi","hitler","estupro","porn"];
+  function validUser(name) {
+    if (!/^[a-zA-Z0-9_]{3,16}$/.test(name)) return "Só letras, números e _ (3-16).";
+    const low = name.toLowerCase();
+    if (BAD_NAMES.some((w) => low.indexOf(w) >= 0)) return "Nome inapropriado.";
+    return "";
+  }
+  function userTaken(name) {
+    try {
+      const map = JSON.parse(localStorage.getItem("dl_users") || "{}");
+      return !!map[name.toLowerCase()];
+    } catch { return false; }
+  }
+  function saveUserLocal(name, pass) {
+    const map = JSON.parse(localStorage.getItem("dl_users") || "{}");
+    map[name.toLowerCase()] = { hash: String(hashStr(pass)), name };
+    localStorage.setItem("dl_users", JSON.stringify(map));
+  }
+  function checkUserLocal(name, pass) {
+    const map = JSON.parse(localStorage.getItem("dl_users") || "{}");
+    const rec = map[name.toLowerCase()];
+    if (!rec) return false;
+    return rec.hash === String(hashStr(pass));
+  }
+  function passStrength(pw) {
+    let n = 0;
+    if (pw.length >= 8) n++;
+    if (pw.length >= 12) n++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) n++;
+    if (/[0-9]/.test(pw)) n++;
+    if (/[^A-Za-z0-9]/.test(pw)) n++;
+    if (n <= 1) return "wilt";
+    if (n === 2) return "ok";
+    if (n === 3) return "bars";
+    return "vault";
+  }
+  function passLabel(cls) {
+    return cls === "wilt" ? "fraca" : cls === "ok" ? "normal" : cls === "bars" ? "forte" : "muito forte";
   }
 
   function renderLookMenu() {
@@ -3078,37 +3446,66 @@ input, select {
     renderAchTree();
     showPane("menu-ach");
   };
-  async function accSubmit(isNew) {
-    const user = ($("acc-user") && $("acc-user").value.trim()) || "";
-    const pass = ($("acc-pass") && $("acc-pass").value) || "";
-    const st = $("acc-status");
-    if (!/^[a-zA-Z0-9_]{3,16}$/.test(user)) {
-      if (st) st.textContent = "Usuário: 3-16 letras, números ou _";
-      return;
-    }
-    if (pass.length < 4) {
-      if (st) st.textContent = "Senha curta demais.";
-      return;
-    }
-    const local = loadProfile();
-    local.name = user;
-    saveProfile(local);
-    localStorage.setItem("dl_name", user);
-    if ($("mp-host") && !$("mp-host").value) $("mp-host").value = "denselandsbackend.onrender.com";
-    if ($("mp-user")) $("mp-user").value = user;
-    if ($("mp-pass")) $("mp-pass").value = pass;
-    if (st) st.textContent = "Conta local ok. Tentando o servidor…";
-    try {
-      await mpAuth(isNew);
-      mergeServerProfile({ name: net.name, xp: local.xp, ach: local.ach });
-      if (st) st.textContent = "Conta pronta.";
-    } catch (e) {
-      if (st) st.textContent = "Local ok. Servidor: " + e.message;
-    }
-    showHome();
+  async function accSubmit(isNew, nameArg, passArg) {
+    const user = (nameArg || state._regName || ($("reg-user") && $("reg-user").value) || ($("log-user") && $("log-user").value) || "").trim();
+    const pass = passArg || state._regPass || ($("reg-pass") && $("reg-pass").value) || ($("log-pass") && $("log-pass").value) || "";
+    dlFinishAccount(user, pass);
   }
   if ($("acc-create")) $("acc-create").onclick = () => accSubmit(true);
   if ($("acc-login")) $("acc-login").onclick = () => accSubmit(false);
+  if ($("wel-new")) $("wel-new").onclick = () => showPane("menu-reg-user");
+  if ($("wel-old")) $("wel-old").onclick = () => showPane("menu-login");
+  if ($("reg-user-back")) $("reg-user-back").onclick = () => showPane("menu-welcome");
+  if ($("reg-user-next")) $("reg-user-next").onclick = () => {
+    const name = ($("reg-user").value || "").trim();
+    const err = validUser(name) || (userTaken(name) ? "Esse nome já foi pego." : "");
+    $("reg-user-err").textContent = err;
+    if (err) return;
+    state._regName = name;
+    showPane("menu-reg-pass");
+  };
+  if ($("reg-pass")) $("reg-pass").addEventListener("input", () => {
+    const cls = passStrength($("reg-pass").value || "");
+    const pot = $("plant-pot");
+    if (pot) pot.className = "plant " + cls;
+    if ($("pass-str-lab")) $("pass-str-lab").textContent = passLabel(cls);
+  });
+  if ($("reg-pass-back")) $("reg-pass-back").onclick = () => showPane("menu-reg-user");
+  if ($("reg-pass-next")) $("reg-pass-next").onclick = () => {
+    const pw = $("reg-pass").value || "";
+    if (pw.length < 4) return;
+    state._regPass = pw;
+    showPane("menu-reg-confirm");
+  };
+  if ($("reg-conf-back")) $("reg-conf-back").onclick = () => showPane("menu-reg-pass");
+  if ($("reg-done")) $("reg-done").onclick = async () => {
+    const pw2 = $("reg-pass2").value || "";
+    if (pw2 !== state._regPass) { $("reg-pass-err").textContent = "As senhas não batem."; return; }
+    const name = state._regName;
+    await accSubmit(true, name, state._regPass);
+  };
+  if ($("log-back")) $("log-back").onclick = () => showPane("menu-welcome");
+  if ($("log-forgot")) $("log-forgot").onclick = () => showPane("menu-reg-user");
+  if ($("log-go")) $("log-go").onclick = async () => {
+    const name = ($("log-user").value || "").trim();
+    const pass = $("log-pass").value || "";
+    if (!checkUserLocal(name, pass) && !localStorage.getItem("dl_token")) {
+      // still try server
+    }
+    if (!checkUserLocal(name, pass)) {
+      // allow if no local users yet and name matches profile
+      const prof = loadProfile();
+      if (!(prof.name && prof.name === name && pass.length >= 4)) {
+        if ($("log-err")) $("log-err").textContent = "Usuário ou senha errados. Se esqueceu, crie outra conta.";
+        return;
+      }
+    }
+    await accSubmit(false, name, pass);
+  };
+  if ($("btn-controls")) $("btn-controls").onclick = () => { showPane("menu-controls"); renderControls(); };
+  if ($("controls-back")) $("controls-back").onclick = () => showPane("menu-settings");
+  if ($("btn-ach")) $("btn-ach").onclick = () => { renderAchTree(); showPane("menu-ach"); };
+
   if ($("sign-close")) $("sign-close").onclick = () => $("sign-box").classList.add("hidden");
   if ($("sign-save")) $("sign-save").onclick = () => {
     const pl = state.openSign;
@@ -3120,7 +3517,7 @@ input, select {
     $("sign-box").classList.add("hidden");
   };
   if ($("play-back")) $("play-back").onclick = showHome;
-  if ($("btn-offline")) $("btn-offline").onclick = () => showPane("menu-offline");
+  if ($("btn-offline")) $("btn-offline").onclick = () => renderLoadList();
   if ($("offline-back")) $("offline-back").onclick = () => showPane("menu-play");
   if ($("btn-settings")) $("btn-settings").onclick = () => showPane("menu-settings");
   if ($("settings-back")) $("settings-back").onclick = showHome;
@@ -3139,7 +3536,7 @@ input, select {
     mpRefresh();
   };
   if ($("online-back")) $("online-back").onclick = () => showPane("menu-play");
-  $("btn-create").onclick = () => {
+  if ($("btn-create")) $("btn-create").onclick = () => {
     showPane("form-create");
   };
   if ($("seed-tabs")) {
@@ -3158,9 +3555,9 @@ input, select {
       showMsg("Seed " + b.dataset.seed + " escolhida");
     };
   });
-  $("create-back").onclick = () => showPane("menu-offline");
-  $("load-back").onclick = () => showPane("menu-offline");
-  $("pass-back").onclick = () => { renderLoadList(); };
+  if ($("create-back")) $("create-back").onclick = () => showPane("menu-offline");
+  if ($("load-back")) $("load-back").onclick = () => showPane("menu-offline");
+  if ($("pass-back")) $("pass-back").onclick = () => { renderLoadList(); };
   $("room-type").onchange = () => {
     $("pass-wrap").classList.toggle("hidden", $("room-type").value !== "private");
   };
@@ -3174,9 +3571,9 @@ input, select {
 
   let pendingRoom = null;
   function renderLoadList() {
-    showPane("menu-load");
+    showPane("menu-offline");
     const list = loadIndex();
-    const box = $("room-list");
+    const box = $("room-list-inline") || $("room-list");
     if (!list.length) {
       box.innerHTML = "<p class='tiny'>Nenhuma sala salva neste aparelho.</p>";
       return;
@@ -3473,6 +3870,10 @@ input, select {
     } else if (String(id).indexOf("peitoral") === 0) {
       g.fillStyle = (id.indexOf("ferro")>=0) ? "#9aa4b2" : (id.indexOf("bronze")>=0) ? "#c47a3a" : "#8a5a32";
       g.fillRect(8, 10, 16, 14); g.fillRect(6, 10, 4, 8); g.fillRect(22, 10, 4, 8);
+    } else if (String(id).indexOf("flor_") === 0) {
+      const col = id === "flor_azul" ? "#3a6ad4" : id === "flor_vermelha" ? "#d44536" : id === "flor_amarela" ? "#e0b44b" : "#4aaa3a";
+      g.fillStyle = "#3d7a3a"; g.fillRect(15, 16, 2, 10);
+      g.fillStyle = col; g.beginPath(); g.arc(16, 12, 6, 0, 7); g.fill();
     } else if (id === "cachecol") {
       g.fillStyle = "#c44536"; g.fillRect(6, 14, 20, 6);
       g.fillStyle = "#e07070"; g.fillRect(22, 16, 4, 10);
@@ -3704,20 +4105,46 @@ input, select {
     return `<div class="hpmini"><div style="width:${pct}%"></div></div>`;
   }
 
+  function miniSlot(row, i, extraClass) {
+    const p = state.player;
+    const s = row === "hot" ? p.hot[i] : row === "bag" ? p.bag[i] : (row === "helm" ? p.helm : row === "chest" ? p.chest : p.skill);
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = "hot-slot " + (extraClass || "") + (row === "hot" && state.hotSel === i ? " active" : "");
+    el.dataset.row = row;
+    el.dataset.i = String(i || 0);
+    if (s) {
+      const lab = row === "skill" ? skillLabel(s) : "";
+      el.innerHTML = '<img alt="" src="' + itemIcon(s.id, 40) + '">' + (s.n && row !== "skill" ? '<span class="q">' + s.n + "</span>" : "") + barHtml(s);
+      if (lab) el.title = lab;
+    }
+    el.onclick = () => {
+      if (row === "hot") useHotSlot(i);
+      else toggleInv(true);
+    };
+    return el;
+  }
   function renderHotbar() {
     if (!state.player || !$("hot-slots")) return;
-    const box = $("hot-slots");
     const p = state.player;
+    const helm = $("q-helm");
+    const chest = $("q-chest");
+    const skill = $("q-skill");
+    const info = $("q-skill-info");
+    if (helm) { helm.innerHTML = ""; helm.appendChild(miniSlot("helm", 0, "q-helm")); }
+    if (chest) { chest.innerHTML = ""; chest.appendChild(miniSlot("chest", 0, "q-chest")); }
+    if (skill) { skill.innerHTML = ""; skill.appendChild(miniSlot("skill", 0, "q-skill")); }
+    if (info) {
+      const sk = equippedSkill();
+      info.textContent = sk ? (sk.name + " · " + (sk.group || "skill")) : "sem skill";
+    }
+    const box = $("hot-slots");
     box.innerHTML = "";
-    for (let i = 0; i < HOT_N; i++) {
-      const slot = document.createElement("button");
-      slot.type = "button";
-      slot.className = "hot-slot" + (state.hotSel === i ? " active" : "");
-      const s = p.hot[i];
-      slot.innerHTML = `<span class="n">${i + 1}</span>` +
-        (s ? `<img alt="" src="${itemIcon(s.id, 40)}"><span class="q">${s.n}</span>${barHtml(s)}` : "");
-      slot.onclick = () => useHotSlot(i);
-      box.appendChild(slot);
+    for (let i = 0; i < HOT_N; i++) box.appendChild(miniSlot("hot", i));
+    const bag = $("bag-slots");
+    if (bag) {
+      bag.innerHTML = "";
+      for (let i = 0; i < BAG_N; i++) bag.appendChild(miniSlot("bag", i));
     }
   }
 
@@ -3745,6 +4172,7 @@ input, select {
     }
     renderPips($("hp-pips"), Math.max(0, state.player.hp), state.player.maxHp || 20);
     renderPips($("hunger-pips"), Math.max(0, state.player.hunger || 0), state.player.maxHunger || 20);
+    if ($("armor-pips")) renderPips($("armor-pips"), armorDef(), 8);
     if ($("air-fill")) {
       const a = Math.max(0, state.player.air || 0) / (state.player.maxAir || 20) * 100;
       $("air-fill").style.width = a + "%";
@@ -3785,7 +4213,14 @@ input, select {
       spec.querySelectorAll("[data-row]").forEach((el) => bindInvSlot(el));
     }
     if ($("equipped")) $("equipped").innerHTML = "";
-    const list = RECIPES.slice();
+    function recipeCat(id) {
+      if (/machado|picareta|espada|porrete|lanca|arco/.test(id)) return "ferramentas";
+      if (/bloco|porta|placa|bau|bancada|forno|skill_bench|cama|tocha|bote/.test(id)) return "construcao";
+      return "utensilios";
+    }
+    const tab = state.craftTab || "tudo";
+    let list = RECIPES.slice();
+    if (tab && tab !== "tudo") list = list.filter((r) => recipeCat(r.id) === tab);
     if ($("recipes")) {
       $("recipes").innerHTML = list.map((r, i) => {
         const name = (ITEM[r.id] && ITEM[r.id].name) || r.id;
@@ -3966,7 +4401,20 @@ input, select {
     } else state.tableOpen = false;
   }
   $("inv-close").onclick = () => toggleInv(false);
-  if ($("craft-tabs")) {
+  function bindCraftTabs(id, after) {
+    const el = $(id);
+    if (!el) return;
+    el.onclick = (e) => {
+      const b = e.target.closest("[data-tab]");
+      if (!b) return;
+      state.craftTab = b.dataset.tab;
+      el.querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+      after();
+    };
+  }
+  bindCraftTabs("craft-tabs", renderInventory);
+  bindCraftTabs("bench-tabs", () => { if ($("bench") && !$("bench").classList.contains("hidden")) openBench(); });
+  if (false && $("craft-tabs")) {
     $("craft-tabs").onclick = (e) => {
       const b = e.target.closest("[data-tab]");
       if (!b) return;
@@ -4126,7 +4574,16 @@ input, select {
     $("bench").classList.remove("hidden");
     const rawList = RECIPES.concat(TABLE_RECIPES);
     const seen = new Set();
-    const list = rawList.filter((r) => { if (seen.has(r.id)) return false; seen.add(r.id); return true; });
+    const tab = state.craftTab || "tudo";
+    const list = rawList.filter((r) => {
+      if (seen.has(r.id)) return false; seen.add(r.id);
+      if (tab && tab !== "tudo") {
+        const cat = /machado|picareta|espada|porrete|lanca|arco/.test(r.id) ? "ferramentas"
+          : /bloco|porta|placa|bau|bancada|forno|skill_bench|cama|tocha|bote/.test(r.id) ? "construcao" : "utensilios";
+        if (cat !== tab) return false;
+      }
+      return true;
+    });
     $("bench-recipes").innerHTML = list.map((r, i) => {
       const name = (ITEM[r.id] && ITEM[r.id].name) || r.id;
       const need = Object.entries(r.need).map(([k, v]) => v + " " + k).join(", ");
@@ -4256,10 +4713,12 @@ input, select {
       openCmd();
       return;
     }
-    if (k === "c") toggleInv();
-    if (k === "z") tryAttack();
-    if (k === "x") tryInteract();
-    if (k === "q") dropSelected();
+    const binds = loadBinds();
+    const low = (x) => String(x).toLowerCase();
+    if (low(e.key) === low(binds.inv) || k === "c") toggleInv();
+    if (low(e.key) === low(binds.attack) || k === "z") tryAttack();
+    if (low(e.key) === low(binds.use) || k === "x") tryInteract();
+    if (low(e.key) === low(binds.drop) || k === "q") dropSelected();
     if (k === "enter" && state.online && $("mp-in") && document.activeElement !== $("mp-in")) {
       $("mp-in").focus();
       return;
@@ -4377,9 +4836,11 @@ input, select {
     for (const { tx, ty } of tilesInFront()) {
       const pl = placedAt(tx, ty);
       if (pl) {
-        const extra = (pl.id === "bloco_pedra" || pl.id === "forno") ? info.rock : 1;
+        const isFlor = String(pl.id).indexOf("flor_") === 0;
+        const extra = isFlor ? 99 : ((pl.id === "bloco_pedra" || pl.id === "forno") ? info.rock : 1);
         pl.hp -= Math.max(1, extra);
-        burst(ax, ay, "#c4a06a");
+        const cols = { flor_azul: "#3a6ad4", flor_vermelha: "#d44536", flor_amarela: "#e0b44b", flor_verde: "#4aaa3a" };
+        burst(ax, ay, isFlor ? (cols[pl.id] || "#fff") : "#c4a06a");
         if (pl.hp <= 0) {
           if (state.dim) state.dim.placed = state.dim.placed.filter((x) => x !== pl);
           else {
@@ -4517,6 +4978,7 @@ input, select {
     const t = tileAt(tx, ty);
     if (slot.id === "bote") {
       if (t !== TILES.WATER) return showMsg("O bote só vai na água.");
+      if (isSwampWater(tx, ty)) return showMsg("A água do pântano engole até o bote.");
     } else if (slot.id === "bloco_madeira" && t === TILES.WATER) {
       /* deck na água */
     } else {
@@ -4737,10 +5199,11 @@ input, select {
     updateHud();
   }
 
-  function spawnNightMobs() {
+  function spawnNightMobs(forceN) {
     if (state.dim) return;
     const p = state.player;
-    const n = 4 + (Math.random() * 3 | 0);
+    if ((state.nightMobs || []).filter((e) => e.alive).length >= 8) return;
+    const n = forceN != null ? forceN : 1;
     for (let i = 0; i < n; i++) {
       const a = Math.random() * Math.PI * 2;
       const d = 90 + Math.random() * 160;
@@ -4764,7 +5227,6 @@ input, select {
       e.gold = 3;
       state.nightMobs.push(e);
     }
-    if (state.nightMobs.length) showMsg("A noite cai. Monstros saem da névoa.");
   }
 
   function allEnemies() {
@@ -4805,10 +5267,11 @@ input, select {
   // ---------- Update / draw ----------
   function inputVector() {
     let ix = 0, iy = 0;
-    if (keys.ArrowLeft) ix -= 1;
-    if (keys.ArrowRight) ix += 1;
-    if (keys.ArrowUp) iy -= 1;
-    if (keys.ArrowDown) iy += 1;
+    const binds = loadBinds();
+    if (keys.ArrowUp || keys[binds.up]) iy -= 1;
+    if (keys.ArrowDown || keys[binds.down]) iy += 1;
+    if (keys.ArrowLeft || keys[binds.left]) ix -= 1;
+    if (keys.ArrowRight || keys[binds.right]) ix += 1;
     if (state.joy.active) {
       ix += state.joy.dx;
       iy += state.joy.dy;
@@ -4837,7 +5300,17 @@ input, select {
 
     state.time += dt;
     const night = isNight();
-    if (night && !state.wasNight) spawnNightMobs();
+    if (night && !state.wasNight) {
+      state.nightSpawnT = 0;
+      showMsg("A noite cai. Os monstros vêm com o tempo.");
+    }
+    if (night) {
+      state.nightSpawnT = (state.nightSpawnT || 0) + dt;
+      if (state.nightSpawnT > 9) {
+        state.nightSpawnT = 0;
+        spawnNightMobs(1);
+      }
+    }
     if (!night && state.wasNight) {
       state.nightMobs.forEach((e) => { e.alive = false; });
       state.nightMobs = [];
@@ -5427,10 +5900,11 @@ input, select {
 
   function drawTile(x, y, tile, tx, ty, t) {
     if (tile === TILES.WATER) {
+      const swamp = state.room && biomeAt(tx, ty, state.room.seed) === "swamp";
       const w = 0.5 + 0.5 * Math.sin((tx + ty) * 0.4 + t * 1.6);
-      ctx.fillStyle = w > 0.55 ? "#1d6a92" : "#155a82";
+      ctx.fillStyle = swamp ? (w > 0.55 ? "#4a6a22" : "#2a4a18") : (w > 0.55 ? "#1d6a92" : "#155a82");
       ctx.fillRect(x, y, TILE + 1, TILE + 1);
-      ctx.fillStyle = "rgba(180,230,255,0.12)";
+      ctx.fillStyle = swamp ? "rgba(160,220,80,0.18)" : "rgba(180,230,255,0.12)";
       ctx.fillRect(x + 8, y + (t * 12 + tx * 5) % TILE, 10, 2);
       return;
     }
@@ -5439,6 +5913,7 @@ input, select {
       const bio = state.room ? biomeAt(tx, ty, state.room.seed) : "plains";
       if (bio === "jungle") ctx.fillStyle = ((tx + ty) & 1) ? "#2f7a38" : "#1e5a28";
       else if (bio === "forest") ctx.fillStyle = ((tx + ty) & 1) ? "#3d7a3a" : "#2f6230";
+      else if (bio === "swamp") ctx.fillStyle = ((tx + ty) & 1) ? "#4a6a28" : "#2e4a24";
       else ctx.fillStyle = ((tx + ty) & 1) ? "#4f8f45" : "#5b9a4c";
     }
     else if (tile === TILES.PATH) ctx.fillStyle = "#c4a06a";
@@ -5486,6 +5961,14 @@ input, select {
     ctx.beginPath(); ctx.arc(x - 6, y - 10, 8, 0, 7); ctx.fill();
   }
   function drawPlaced(x, y, pl) {
+    if (String(pl.id).indexOf("flor_") === 0) {
+      const col = pl.id === "flor_azul" ? "#3a6ad4" : pl.id === "flor_vermelha" ? "#d44536" : pl.id === "flor_amarela" ? "#e0b44b" : "#4aaa3a";
+      ctx.strokeStyle = "#3d7a3a"; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, y + 10); ctx.lineTo(x, y - 2); ctx.stroke();
+      ctx.fillStyle = col;
+      ctx.beginPath(); ctx.arc(x, y - 6, 5, 0, 7); ctx.fill();
+      return;
+    }
     if (pl.id === "bote") {
       ctx.fillStyle = "#6b4423";
       ctx.beginPath();
@@ -5859,9 +6342,16 @@ input, select {
   window.addEventListener("beforeunload", () => {
     if (state.mode === "play") persist();
   });
-  updateAccountHud();
-  if (!hasAccount()) showPane("menu-account");
-  else showHome();
+  try {
+    paintMenuBiome();
+    updateAccountHud();
+    if (!hasAccount()) showPane("menu-welcome");
+    else showHome();
+  } catch (err) {
+    console.error(err);
+    const w = document.getElementById("menu-welcome");
+    if (w) w.classList.remove("hidden");
+  }
 })();
 
   </script>
