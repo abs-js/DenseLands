@@ -775,6 +775,13 @@ body.four-finger.lefty #btn-b {
 .inv-row-slots { display: flex; gap: 6px; flex-wrap: wrap; }
 .inv-skill-info { font-size: 13px; line-height: 1.35; color: #f3e2c4; }
 
+.bio-sadlands { background:
+  repeating-linear-gradient(0deg,#eef4f8 0 16px,#dce6ee 16px 32px),
+  repeating-linear-gradient(90deg,#eef4f8 0 16px,#dce6ee 16px 32px); }
+#artisan { z-index: 12; }
+#drag-ghost { pointer-events: none; touch-action: none; }
+.icon-card { touch-action: none; }
+
   </style>
 </head>
 <body>
@@ -1175,7 +1182,16 @@ body.four-finger.lefty #btn-b {
       <input id="mp-in" maxlength="180" placeholder="Enter: chat  ·  /comando" />
     </div>
     <button id="btn-pause" class="round-btn hidden" type="button">☰</button>
-    <div id="skill-bench" class="panel pack hidden">
+    
+    <div id="artisan" class="panel pack hidden">
+      <div class="panel-head">
+        <h2>Bancada do artesão</h2>
+        <button class="close-x" id="artisan-close" type="button">×</button>
+      </div>
+      <p class="pack-note">Pinta armadura de couro, cachecol e peças com carvão (preto ou cinza) ou flor (a cor dela).</p>
+      <div id="artisan-list"></div>
+    </div>
+<div id="skill-bench" class="panel pack hidden">
       <div class="panel-head">
         <h2>Bancada de skill</h2>
         <button class="close-x" id="skill-bench-close" type="button">×</button>
@@ -1194,7 +1210,7 @@ body.four-finger.lefty #btn-b {
     <div id="drag-ghost" class="hidden"></div>
   </div>
 
-                  <script>
+                        <script>
 (() => {
   "use strict";
 
@@ -1351,12 +1367,12 @@ body.four-finger.lefty #btn-b {
   const BAG_N = 4;
   const HOT_N = 4;
   const STACK = 32;
-  const PLACEABLE = new Set(["bloco_madeira", "bloco_pedra", "bote", "cama", "forno", "bau", "bau_grande", "bancada", "tocha", "porta", "placa", "skill_bench"]);
+  const PLACEABLE = new Set(["bloco_madeira", "bloco_pedra", "bote", "cama", "forno", "bau", "bau_grande", "bancada", "tocha", "porta", "placa", "skill_bench", "armadilha", "bancada_artesao", "flor_vermelha", "flor_azul", "flor_amarela", "flor_verde"]);
   const MAP_IDS = new Set(["mapa", "mapa_masmorra", "mapa_mina", "mapa_navio"]);
   const RECIPE_CAT = {
     ferramentas: new Set(["porrete","lanca","arco","vara","machado_madeira","picareta_madeira","espada_madeira","machado_pedra","picareta_pedra","espada_pedra","machado_cobre","picareta_cobre","espada_cobre","machado_ferro","picareta_ferro","espada_ferro"]),
-    construcao: new Set(["bloco_madeira","bloco_pedra","bancada","forno","bau","bau_grande","cama","bote","porta","placa","skill_bench"]),
-    utilitarios: new Set(["linha","flecha","tocha"]),
+    construcao: new Set(["bloco_madeira","bloco_pedra","bancada","forno","bau","bau_grande","cama","bote","porta","placa","skill_bench","bancada_artesao"]),
+    utilitarios: new Set(["linha","flecha","tocha","armadilha"]),
   };
   const WEAPONS = new Set([
     "porrete", "lanca", "arco", "vara",
@@ -1368,13 +1384,14 @@ body.four-finger.lefty #btn-b {
   ]);
   const ITEM_ALIAS = { machado: "machado_pedra", picareta: "picareta_pedra", espada: "espada_pedra", mesa: "bancada" };
   const FOOD_RAW = new Set(["carne_crua", "peixe_cru"]);
-  const FOOD_OK = { pao: 5, carne: 8, peixe: 6 };
+  const FOOD_OK = { pao: 5, carne: 8, peixe: 6, trigo: 2 };
   const COOK = {
     carne_crua: "carne",
     peixe_cru: "peixe",
     ferro_bruto: "ferro",
     cobre_bruto: "cobre",
     ouro_bruto: "ouro",
+    diamante_bruto: "diamante",
   };
 
   const ITEM = {
@@ -1401,6 +1418,14 @@ body.four-finger.lefty #btn-b {
     machado_ferro: { name: "Machado de ferro", stack: 1, dmg: 7, rate: 520, dur: 110, color: "#7a8490", tree: 5, rock: 1, area: 1 },
     picareta_ferro: { name: "Picareta de ferro", stack: 1, dmg: 4, rate: 460, dur: 120, color: "#9aa4b2", tree: 1, rock: 5, area: 0 },
     espada_ferro: { name: "Espada de ferro", stack: 1, dmg: 16, rate: 340, dur: 130, color: "#c0c8d4", tree: 1, rock: 1, area: 0 },
+    machado_diamante: { name: "Machado de diamante", stack: 1, dmg: 9, rate: 500, dur: 180, color: "#5ad4e0", tree: 6, rock: 1, area: 1 },
+    picareta_diamante: { name: "Picareta de diamante", stack: 1, dmg: 5, rate: 420, dur: 200, color: "#5ad4e0", tree: 1, rock: 7, area: 0 },
+    espada_diamante: { name: "Espada de diamante", stack: 1, dmg: 20, rate: 320, dur: 210, color: "#7af0f8", tree: 1, rock: 1, area: 0 },
+    enxada_madeira: { name: "Enxada de madeira", stack: 1, dmg: 1, rate: 600, dur: 24, color: "#8b5a2b", tree: 1, rock: 1, area: 0, hoe: 1 },
+    enxada_pedra: { name: "Enxada de pedra", stack: 1, dmg: 1, rate: 560, dur: 40, color: "#8a9098", tree: 1, rock: 1, area: 0, hoe: 1 },
+    enxada_cobre: { name: "Enxada de cobre", stack: 1, dmg: 2, rate: 540, dur: 55, color: "#c47a3a", tree: 1, rock: 1, area: 0, hoe: 1 },
+    enxada_ferro: { name: "Enxada de ferro", stack: 1, dmg: 2, rate: 520, dur: 80, color: "#9aa4b2", tree: 1, rock: 1, area: 0, hoe: 1 },
+    enxada_diamante: { name: "Enxada de diamante", stack: 1, dmg: 3, rate: 480, dur: 140, color: "#5ad4e0", tree: 1, rock: 1, area: 0, hoe: 1 },
     ferro_bruto: { name: "Minério de ferro", stack: STACK },
     ferro: { name: "Ferro", stack: STACK },
     cobre_bruto: { name: "Minério de cobre", stack: STACK },
@@ -1434,6 +1459,8 @@ body.four-finger.lefty #btn-b {
     flor_azul: { name: "Flor azul", stack: STACK, solid: false, hp: 1 },
     flor_amarela: { name: "Flor amarela", stack: STACK, solid: false, hp: 1 },
     flor_verde: { name: "Flor verde", stack: STACK, solid: false, hp: 1 },
+    armadilha: { name: "Armadilha", stack: STACK, solid: false, hp: 4 },
+    bancada_artesao: { name: "Bancada do artesão", stack: STACK, solid: true, hp: 8 },
     bancada: { name: "Bancada", stack: STACK, solid: true, hp: 5 },
     cama: { name: "Cama", stack: STACK, solid: true, hp: 6 },
     carne_crua: { name: "Carne crua", stack: STACK },
@@ -1441,6 +1468,14 @@ body.four-finger.lefty #btn-b {
     peixe_cru: { name: "Peixe cru", stack: STACK },
     peixe: { name: "Peixe assado", stack: STACK },
     carvao: { name: "Carvão", stack: STACK },
+    diamante_bruto: { name: "Minério de diamante", stack: STACK },
+    diamante: { name: "Diamante", stack: STACK },
+    bloco_ouro: { name: "Bloco de ouro", stack: STACK, solid: true, hp: 10 },
+    bloco_diamante: { name: "Bloco de diamante", stack: STACK, solid: true, hp: 14 },
+    semente: { name: "Semente", stack: STACK, solid: false, hp: 1 },
+    trigo: { name: "Trigo", stack: STACK },
+    terra_arada: { name: "Terra arada", stack: STACK, solid: false, hp: 2 },
+    grama_alta: { name: "Grama alta", stack: STACK, solid: false, hp: 1 },
   };
   ITEM.machado = ITEM.machado_pedra;
   ITEM.picareta = ITEM.picareta_pedra;
@@ -1488,6 +1523,19 @@ body.four-finger.lefty #btn-b {
     { id: "machado_ferro", need: { madeira: 4, ferro: 4 } },
     { id: "picareta_ferro", need: { madeira: 3, ferro: 5 } },
     { id: "espada_ferro", need: { madeira: 2, ferro: 6 } },
+    { id: "armadilha", need: { madeira: 2, linha: 1, ferro: 1 } },
+    { id: "bancada_artesao", need: { madeira: 4, pedra: 2 } },
+    { id: "bloco_ouro", need: { ouro: 4 } },
+    { id: "bloco_diamante", need: { diamante: 4 } },
+    { id: "machado_diamante", need: { madeira: 4, diamante: 4 } },
+    { id: "picareta_diamante", need: { madeira: 3, diamante: 5 } },
+    { id: "espada_diamante", need: { madeira: 2, diamante: 6 } },
+    { id: "enxada_madeira", need: { madeira: 4 } },
+    { id: "enxada_pedra", need: { madeira: 3, pedra: 2 } },
+    { id: "enxada_cobre", need: { madeira: 3, cobre: 2 } },
+    { id: "enxada_ferro", need: { madeira: 3, ferro: 2 } },
+    { id: "enxada_diamante", need: { madeira: 3, diamante: 2 } },
+    { id: "pao", need: { trigo: 3 } },
   ];
 
   const SKILLS = {
@@ -1547,10 +1595,22 @@ body.four-finger.lefty #btn-b {
     return h >>> 0;
   }
   function seedFromInput(input) {
-    if (!input || !String(input).trim()) return (Math.random() * 0xffffffff) >>> 0;
-    const n = Number(input);
-    if (Number.isFinite(n) && String(input).trim() !== "") return (n >>> 0) || hashStr(input);
-    return hashStr(input);
+    const raw = String(input == null ? "" : input).trim();
+    if (!raw) return ((Math.random() * 0x7fffffff) | 1);
+    if (/^-?\d+$/.test(raw)) {
+      const n = Number(raw);
+      if (!Number.isFinite(n)) return hashStr(raw);
+      if (n < 0) return n | 0;
+      if (n === 0) return hashStr(raw);
+      if (n <= 2147483647) return n | 0;
+      return n >>> 0;
+    }
+    return hashStr(raw);
+  }
+  const WORLD_EDGE = 500000;
+  function outsideWorld(tx, ty) {
+    if (state && state.borderOff) return false;
+    return Math.abs(tx) > WORLD_EDGE || Math.abs(ty) > WORLD_EDGE;
   }
   function hash2(x, y, seed) {
     let h = seed ^ Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263);
@@ -1600,12 +1660,21 @@ body.four-finger.lefty #btn-b {
       return "ocean";
     }
     if (moist > 0.56 && heat < 0.44) return "swamp";
+    if (heat > 0.70 && moist < 0.34 && moist > 0.12) return "sadlands";
     if (moist > 0.60 && heat > 0.46) return "jungle";
     if (moist > 0.52) return "forest";
     return "plains";
   }
   function biomeLabel(b) {
-    return b === "jungle" ? "Selva" : b === "forest" ? "Floresta densa" : b === "swamp" ? "Pântano de slimes" : b === "ocean" ? "Mar" : "Planície";
+    return b === "jungle" ? "Selva" : b === "forest" ? "Floresta densa" : b === "swamp" ? "Pântano de slimes" : b === "sadlands" ? "Sadlands" : b === "ocean" ? "Mar" : "Planície";
+  }
+  function isSadlandsIce(tx, ty) {
+    return tileAt(tx, ty) === TILES.WATER && biomeAt(tx, ty, state.room && state.room.seed) === "sadlands";
+  }
+  function forestFogAt(tx, ty, seed) {
+    if (biomeAt(tx, ty, seed) !== "forest") return 0;
+    const n = fbm(tx * 0.028 + (state.time || 0) * 0.012, ty * 0.028 + (state.time || 0) * 0.007, (seed || 1) + 201);
+    return n > 0.57 ? Math.min(1, (n - 0.57) * 3.2) : 0;
   }
   function isSwampWater(tx, ty) {
     return tileAt(tx, ty) === TILES.WATER && biomeAt(tx, ty, state.room && state.room.seed) === "swamp";
@@ -1788,6 +1857,8 @@ body.four-finger.lefty #btn-b {
           if (!state.village) state.village = v;
         }
       } else addMineAt(pos, false);
+    } else if (bio === "sadlands") {
+      return;
     } else if (bio === "forest") {
       if (hash2(cx, 2, seed + 6) > 0.48) addPortalAt(pos, seed, "forest");
       else addWizardAt(pos, seed);
@@ -1971,9 +2042,9 @@ body.four-finger.lefty #btn-b {
           }
         } else if (t === TILES.GRASS) {
           const bio = biomeAt(tx, ty, seed);
-          const treeCut = bio === "jungle" ? 0.48 : bio === "forest" ? 0.58 : bio === "swamp" ? 0.94 : 0.88;
-          const rockCut = bio === "jungle" ? 0.90 : bio === "swamp" ? 0.992 : bio === "plains" ? 0.978 : 0.97;
-          const oreCut = bio === "jungle" ? 0.955 : bio === "swamp" ? 0.999 : 0.992;
+          const treeCut = bio === "jungle" ? 0.48 : bio === "forest" ? 0.58 : bio === "swamp" ? 0.94 : bio === "sadlands" ? 0.97 : 0.88;
+          const rockCut = bio === "jungle" ? 0.90 : bio === "swamp" ? 0.992 : bio === "plains" ? 0.978 : bio === "sadlands" ? 0.94 : 0.97;
+          const oreCut = bio === "jungle" ? 0.955 : bio === "swamp" ? 0.999 : bio === "sadlands" ? 0.97 : 0.992;
           if (hash2(tx, ty, seed + 21) > treeCut) {
             trees.push({ tx, ty, hp: bio === "jungle" ? 5 : 4 });
           } else if (hash2(tx, ty, seed + 44) > rockCut) {
@@ -1981,6 +2052,9 @@ body.four-finger.lefty #btn-b {
           } else if (hash2(tx, ty, seed + 70) > oreCut) {
             const roll = hash2(tx, ty, seed + 71);
             ores.push({ tx, ty, id: roll > 0.7 ? "ferro_bruto" : roll > 0.4 ? "cobre_bruto" : "ouro_bruto", hp: 8 });
+          } else if ((bio === "plains" || bio === "forest") && hash2(tx, ty, seed + 141) > 0.93) {
+            tiles._flowers = tiles._flowers || [];
+            tiles._flowers.push({ tx, ty, id: "grama_alta" });
           } else if (bio === "plains" && hash2(tx, ty, seed + 121) > 0.96) {
             const fr = hash2(tx, ty, seed + 122);
             const fid = fr > 0.97 ? "flor_azul" : fr > 0.72 ? "flor_vermelha" : fr > 0.44 ? "flor_amarela" : "flor_verde";
@@ -2012,7 +2086,41 @@ body.four-finger.lefty #btn-b {
       tiles._flowers.forEach((f) => chunk.placed.push({ tx: f.tx, ty: f.ty, id: f.id, hp: 1 }));
       delete tiles._flowers;
     }
-    if (biomeAt(cx * CHUNK + 8, cy * CHUNK + 8, seed) === "swamp" && hash2(cx, cy, seed + 33) > 0.45) {
+    const midBio = biomeAt(cx * CHUNK + 8, cy * CHUNK + 8, seed);
+    if (midBio === "sadlands" && hash2(cx, cy, seed + 81) > 0.91) {
+      const ox = cx * CHUNK + 4 + (hash2(cx, cy, seed + 82) * 6 | 0);
+      const oy = cy * CHUNK + 4 + (hash2(cx, cy, seed + 83) * 6 | 0);
+      if (!chunk.ores.some((o) => o.tx === ox && o.ty === oy))
+        chunk.ores.push({ tx: ox, ty: oy, id: "diamante_bruto", hp: 12 });
+      [[0,-1],[0,1],[-1,0],[1,0],[-1,-1],[1,1],[-1,1],[1,-1]].forEach(([dx, dy]) => {
+        if (!chunk.rocks.some((r) => r.tx === ox + dx && r.ty === oy + dy))
+          chunk.rocks.push({ tx: ox + dx, ty: oy + dy, hp: 7 });
+      });
+    }
+    if (midBio === "sadlands" && hash2(cx, cy, seed + 61) > 0.78) {
+      const ox = cx * CHUNK + 3 + (hash2(cx, cy, seed + 62) * 8 | 0);
+      const oy = cy * CHUNK + 3 + (hash2(cx, cy, seed + 63) * 8 | 0);
+      const loot = hash2(cx, cy, seed + 64) > 0.5 ? "ferro_bruto" : (hash2(cx, cy, seed + 65) > 0.5 ? "cobre_bruto" : "ouro_bruto");
+      const n = 2 + (hash2(cx, cy, seed + 66) * 3 | 0);
+      if (!chunk.placed.some((p) => p.tx === ox + 1 && p.ty === oy + 1)) {
+        chunk.placed.push({ tx: ox + 1, ty: oy + 1, id: "bau", hp: 7, items: [makeStack(loot, n), makeStack("pedra", 4), null, null] });
+      }
+      [[0,1],[1,0],[1,2],[2,1]].forEach(([dx, dy]) => {
+        if (!chunk.rocks.some((r) => r.tx === ox + dx && r.ty === oy + dy))
+          chunk.rocks.push({ tx: ox + dx, ty: oy + dy, hp: 6 });
+      });
+    }
+    if (midBio === "sadlands" && hash2(cx, cy, seed + 71) > 0.86) {
+      const ox = cx * CHUNK + 4 + (hash2(cx, cy, seed + 72) * 6 | 0);
+      const oy = cy * CHUNK + 3 + (hash2(cx, cy, seed + 73) * 6 | 0);
+      const mid = "x" + cx + "_" + cy;
+      const shape = [[0,1],[1,0],[1,1],[1,2],[2,1],[3,1]];
+      shape.forEach(([dy, dx]) => {
+        if (!chunk.rocks.some((r) => r.tx === ox + dx && r.ty === oy + dy))
+          chunk.rocks.push({ tx: ox + dx, ty: oy + dy, hp: 6, myth: mid });
+      });
+    }
+    if (midBio === "swamp" && hash2(cx, cy, seed + 33) > 0.45) {
       const ax = (cx * CHUNK + 4) * TILE + 20, ay = (cy * CHUNK + 4) * TILE + 20;
       const sl = makeEnemy(ax, ay, seed + cx * 17 + cy);
       sl.kind = "gosma"; sl.hp = sl.maxHp = 10; sl.spd = 28; sl.dmg = 2; sl.gold = 2;
@@ -2037,7 +2145,14 @@ body.four-finger.lefty #btn-b {
     };
     for (const sh of (state.ships || (state.ship ? [state.ship] : []))) {
       putChest(sh.x + 2, sh.y + 1, "pedra", 16);
-      putChest(sh.x + 4, sh.y + 1, "pedra", 12);
+      const maps = ["mapa_navio", "mapa_masmorra", "mapa_mina"];
+      const mid = maps[(hash2(sh.x, sh.y, (state.room && state.room.seed) || 1) * 3) | 0];
+      if (sh.x + 4 >= ch.cx * CHUNK && sh.x + 4 < (ch.cx + 1) * CHUNK && sh.y + 1 >= ch.cy * CHUNK && sh.y + 1 < (ch.cy + 1) * CHUNK) {
+        if (!ch.gonePlaced) ch.gonePlaced = {};
+        if (!ch.gonePlaced[(sh.x+4)+","+(sh.y+1)] && !(ch.placed||[]).some((p)=>p.tx===sh.x+4 && p.ty===sh.y+1)) {
+          ch.placed.push({ tx: sh.x + 4, ty: sh.y + 1, id: "bau", hp: 7, items: [makeStack(mid, 1), makeStack("pedra", 8), hash2(sh.x, 2, 9) > 0.7 ? makeStack("semente", 2) : null, null] });
+        }
+      }
     }
     if (state.house) {
       putChest(state.house.x + 2, state.house.y + 1, "madeira", 10);
@@ -2211,8 +2326,11 @@ body.four-finger.lefty #btn-b {
       const rich = !!(portal && portal.rich);
       const oreBoost = ((equippedSkill() && equippedSkill().ore) ? 0.06 * equippedSkill().ore : 0) + (rich ? 0.12 : 0);
       if (roll > (rich ? 0.72 : 0.86) - oreBoost) {
-        const oid = rnd(R) > 0.75 ? "ouro_bruto" : rnd(R) > 0.45 ? "ferro_bruto" : "cobre_bruto";
-        ores.push({ tx: c.x, ty: c.y, id: oid, hp: 8 });
+        let oid, hp = 8;
+        const gem = rnd(R);
+        if (gem > 0.93) { oid = "diamante_bruto"; hp = 12; }
+        else oid = gem > 0.70 ? "ouro_bruto" : gem > 0.40 ? "ferro_bruto" : "cobre_bruto";
+        ores.push({ tx: c.x, ty: c.y, id: oid, hp });
       } else if (roll > 0.62) rocks.push({ tx: c.x, ty: c.y, hp: 6 });
       else if (roll > 0.58) placed.push({ tx: c.x, ty: c.y, id: "tocha", hp: 2 });
     });
@@ -2319,6 +2437,7 @@ body.four-finger.lefty #btn-b {
   }
   function inWater(px, py) {
     const tx = Math.floor(px / TILE), ty = Math.floor(py / TILE);
+    if (isSadlandsIce(tx, ty)) return false;
     return tileAt(tx, ty) === TILES.WATER && !onBoatTile(tx, ty) && !onWoodDock(tx, ty);
   }
 
@@ -2335,9 +2454,11 @@ body.four-finger.lefty #btn-b {
       if (t === TILES.WALL) return true;
       if (treeAt(tx, ty) || rockAt(tx, ty) || oreAt(tx, ty)) return true;
       if (pl && pl.id === "porta" && pl.open) { /* passa */ }
-      else if (pl && String(pl.id).indexOf("flor_") === 0) { /* passa */ }
+      else if (pl && (String(pl.id).indexOf("flor_") === 0 || pl.id === "grama_alta" || pl.id === "terra_arada" || pl.id === "trigo" || pl.id === "semente" || pl.id === "armadilha")) { /* passa */ }
       else if (pl && pl.id !== "bote" && pl.id !== "tocha" && pl.id !== "placa" && !onWoodDock(tx, ty)) return true;
+      if (outsideWorld(tx, ty)) return true;
       if (t === TILES.WATER) {
+        if (isSadlandsIce(tx, ty)) continue;
         if (isSwampWater(tx, ty)) return true;
         if (onBoatTile(tx, ty) || onWoodDock(tx, ty) || (opt.boat && opt.fromBoat)) continue;
         if (state.room && state.room.hardcore) return true;
@@ -2551,8 +2672,10 @@ body.four-finger.lefty #btn-b {
       x, y,
       hp: kind === "sombra" ? 16 : kind === "esqueleto" ? 12 : 10,
       maxHp: kind === "sombra" ? 16 : kind === "esqueleto" ? 12 : 10,
-      spd: kind === "sombra" ? 55 : kind === "esqueleto" ? 42 : 40,
+      spd: kind === "sombra" ? 28 : kind === "esqueleto" ? 42 : 22,
       dmg: kind === "sombra" ? 4 : kind === "esqueleto" ? 3 : 2,
+      phase: kind === "sombra",
+      hopT: 0, hopping: 0,
       r: 12,
       hurt: 0,
       cd: 0,
@@ -2578,6 +2701,10 @@ body.four-finger.lefty #btn-b {
     }
     return s;
   }
+  function dyeable(s) {
+    return !!(s && (s.id === "cachecol" || (ITEM[s.id] && ITEM[s.id].armor)));
+  }
+  const FLOWER_COL = { flor_azul: "#3a6ad4", flor_vermelha: "#d44536", flor_amarela: "#e0b44b", flor_verde: "#4aaa3a" };
 
   function isSword(w) {
     return !!(w && String(w.id || "").indexOf("espada") === 0);
@@ -2774,16 +2901,21 @@ body.four-finger.lefty #btn-b {
     c.fillStyle = hair;
     c.fillRect(x - 8, y - 8, 16, 5);
     const helm = (state.player && state.player.helm) || opt.helm;
+    const chest = (state.player && state.player.chest) || opt.chest;
+    if (chest && ITEM[chest.id] && ITEM[chest.id].armor === "chest") {
+      c.fillStyle = chest.tint || ITEM[chest.id].color || (String(chest.id).indexOf("ferro")>=0 ? "#9aa4b2" : String(chest.id).indexOf("bronze")>=0 ? "#c47a3a" : "#8a5a32");
+      c.beginPath(); c.arc(x, y + 7, 10, 0.05, Math.PI - 0.05); c.fill();
+    }
     if (helm && helm.id === "cachecol") {
-      c.strokeStyle = "#c44536";
+      c.strokeStyle = helm.tint || "#c44536";
       c.lineWidth = 3;
       c.beginPath(); c.arc(x, y + 5, 9, 0.15, Math.PI - 0.15); c.stroke();
-      c.fillStyle = "#e07070";
+      c.fillStyle = helm.tint || "#e07070";
       c.fillRect(x + 6, y + 6, 4, 10);
-      c.fillStyle = "#c44536";
+      c.fillStyle = helm.tint || "#c44536";
       c.fillRect(x + 6, y + 15, 4, 3);
     } else if (helm && ITEM[helm.id] && ITEM[helm.id].armor === "helm") {
-      c.fillStyle = ITEM[helm.id].color || (String(helm.id).indexOf("ferro")>=0 ? "#9aa4b2" : String(helm.id).indexOf("bronze")>=0 ? "#c47a3a" : "#8a5a32");
+      c.fillStyle = helm.tint || ITEM[helm.id].color || (String(helm.id).indexOf("ferro")>=0 ? "#9aa4b2" : String(helm.id).indexOf("bronze")>=0 ? "#c47a3a" : "#8a5a32");
       c.beginPath(); c.arc(x, y - 6, 9, Math.PI, 0); c.fill();
     }
     const dx = opt.dirx || 0, dy = opt.diry || 1;
@@ -3193,11 +3325,88 @@ body.four-finger.lefty #btn-b {
     state.player = makePlayer(spawn);
     state.cam.x = state.player.x;
     state.cam.y = state.player.y;
+    function sprungTrap(pl) {
+      if (!pl || pl.id !== "armadilha" || !pl.on) return false;
+      pl.on = false;
+      burst(pl.tx * TILE + 20, pl.ty * TILE + 20, "#c44536");
+      shareEdit({ kind: "place", tx: pl.tx, ty: pl.ty, id: "armadilha", hp: pl.hp, on: false });
+      return true;
+    }
+    const pTile = placedAt(Math.floor(p.x / TILE), Math.floor(p.y / TILE));
+    if (sprungTrap(pTile) && (!p.trapCd || p.trapCd <= 0)) {
+      p.root = 3.2;
+      p.trapCd = 0.8;
+      if (hurtPlayer(8)) return;
+      showMsg("A armadilha te prendeu. X / B para se soltar mais rápido.");
+    }
+    p.trapCd = Math.max(0, (p.trapCd || 0) - dt);
+    for (const e of allEnemies()) {
+      if (!e.alive) continue;
+      const tpl = placedAt(Math.floor(e.x / TILE), Math.floor(e.y / TILE));
+      if (sprungTrap(tpl)) {
+        e.root = 3.4;
+        e.hp -= 10;
+        e.hurt = 0.3;
+        if (e.hp <= 0) { e.alive = false; dropItem("ouro", e.gold || 3, e.x, e.y, true); }
+      }
+    }
+    for (const a of allAnimals()) {
+      if (!a.alive) continue;
+      const tpl = placedAt(Math.floor(a.x / TILE), Math.floor(a.y / TILE));
+      if (sprungTrap(tpl)) {
+        a.root = 3;
+        a.hp -= 8;
+        if (a.hp <= 0) a.alive = false;
+      }
+    }
+
     markVisitedFromPlayer();
     persist();
     showLoading(() => {
       enterGame();
       showMsg(t("msg.wake"));
+    });
+  }
+  function openArtisan() {
+    const box = $("artisan");
+    if (!box) return showMsg("Bancada do artesão.");
+    $("inventory").classList.add("hidden");
+    $("bench").classList.add("hidden");
+    box.classList.remove("hidden");
+    const goods = [];
+    const dyes = [];
+    const p = state.player;
+    [["hot", p.hot], ["bag", p.bag], ["helm", [p.helm]], ["chest", [p.chest]]].forEach(([row, arr]) => {
+      (arr || []).forEach((s, i) => {
+        if (dyeable(s)) goods.push({ row, i, s });
+        if (s && (s.id === "carvao" || String(s.id).indexOf("flor_") === 0)) dyes.push({ row, i, s });
+      });
+    });
+    const dest = $("artisan-list");
+    if (!dest) return;
+    if (!goods.length) { dest.innerHTML = "<p class='tiny'>Traga armadura de couro, cachecol ou outra peça para pintar.</p>"; return; }
+    if (!dyes.length) { dest.innerHTML = "<p class='tiny'>Precisa de carvão (preto/cinza) ou uma flor (a cor dela).</p>"; return; }
+    dest.innerHTML = goods.map((g, gi) => dyes.map((d, di) => {
+      const col = d.s.id === "carvao" ? "#2a2a32" : (FLOWER_COL[d.s.id] || "#888");
+      const lab = d.s.id === "carvao" ? "preto ou cinza" : ((ITEM[d.s.id] && ITEM[d.s.id].name) || d.s.id);
+      return `<button type="button" class="shop-row" data-g="${gi}" data-d="${di}">
+        <span class="swatch" style="background:${col};width:16px;height:16px;display:inline-block;border-radius:4px"></span>
+        <span class="shop-lab">${(ITEM[g.s.id]&&ITEM[g.s.id].name)||g.s.id} · ${lab}</span></button>`;
+    }).join("")).join("");
+    dest.querySelectorAll("[data-g]").forEach((b) => {
+      b.onclick = () => {
+        const g = goods[Number(b.dataset.g)];
+        const d = dyes[Number(b.dataset.d)];
+        if (!g || !d) return;
+        let col;
+        if (d.s.id === "carvao") col = Math.random() < 0.5 ? "#1a1a20" : "#7a7a84";
+        else col = FLOWER_COL[d.s.id] || "#888";
+        takeItem(d.s.id, 1);
+        g.s.tint = col;
+        showMsg("Peça pintada.");
+        openArtisan();
+        renderHotbar();
+      };
     });
   }
 
@@ -3210,7 +3419,8 @@ body.four-finger.lefty #btn-b {
       state.konamiBuf = state.konamiBuf.slice(-KONAMI.length);
       if (state.konamiBuf.join(",") === KONAMI.join(",")) {
         state.konamiGift = true;
-        showMsg("Um cachecol cai do céu.");
+        state.borderOff = true;
+        showMsg("Um cachecol cai do céu. A borda do mundo se abre.");
       }
     };
     window.addEventListener("keydown", onk);
@@ -3248,6 +3458,7 @@ body.four-finger.lefty #btn-b {
     renderHotbar();
     applyI18n();
     applyTouchLayout();
+    armKonami();
     $("room-pill").textContent = state.room.name + (state.room.type === "private" ? " 🔒" : " 🌐");
     $("seed-pill").textContent = (state.room.hardcore ? "HARDCORE · " : "") + "seed " + state.room.seed;
     updateHud();
@@ -3267,6 +3478,7 @@ body.four-finger.lefty #btn-b {
     $("chest").classList.add("hidden");
     $("furnace").classList.add("hidden");
     $("bench").classList.add("hidden");
+    if ($("artisan")) $("artisan").classList.add("hidden");
     if ($("mp-chat")) $("mp-chat").classList.add("hidden");
     if (net && net.ws) try { net.ws.close(); } catch {}
     state.online = false;
@@ -3400,7 +3612,7 @@ body.four-finger.lefty #btn-b {
   function paintMenuBiome() {
     const el = $("menu-biome");
     if (!el) return;
-    const list = ["bio-plains","bio-forest","bio-jungle","bio-swamp"];
+    const list = ["bio-plains","bio-forest","bio-jungle","bio-swamp","bio-sadlands"];
     const cur = list[(Date.now() / 40000 | 0) % list.length];
     el.className = cur;
   }
@@ -3545,6 +3757,7 @@ body.four-finger.lefty #btn-b {
   if ($("controls-back")) $("controls-back").onclick = () => showPane("menu-settings");
   if ($("btn-ach")) $("btn-ach").onclick = () => { renderAchTree(); showPane("menu-ach"); };
 
+  if ($("artisan-close")) $("artisan-close").onclick = () => $("artisan").classList.add("hidden");
   if ($("sign-close")) $("sign-close").onclick = () => $("sign-box").classList.add("hidden");
   if ($("sign-save")) $("sign-save").onclick = () => {
     const pl = state.openSign;
@@ -4255,8 +4468,8 @@ body.four-finger.lefty #btn-b {
     }
     if ($("equipped")) $("equipped").innerHTML = "";
     function recipeCat(id) {
-      if (/machado|picareta|espada|porrete|lanca|arco/.test(id)) return "ferramentas";
-      if (/bloco|porta|placa|bau|bancada|forno|skill_bench|cama|tocha|bote/.test(id)) return "construcao";
+      if (/machado|picareta|espada|porrete|lanca|arco|enxada/.test(id)) return "ferramentas";
+      if (/bloco|porta|placa|bau|bancada|forno|skill_bench|cama|tocha|bote|flor_/.test(id)) return "construcao";
       return "utensilios";
     }
     const tab = state.craftTab || "tudo";
@@ -4295,9 +4508,28 @@ body.four-finger.lefty #btn-b {
     const g = $("drag-ghost");
     if (g) g.classList.add("hidden");
   }
+  function moveInvGhost(ev) {
+    const d = state.drag;
+    if (!d) return;
+    const dist = Math.hypot(ev.clientX - d.x, ev.clientY - d.y);
+    if (!d.moved && dist > 16) {
+      d.moved = true;
+      const g = $("drag-ghost");
+      if (g && d.sl) {
+        g.classList.remove("hidden");
+        g.innerHTML = '<img alt="" src="' + itemIcon(d.sl.id, 40) + '">';
+      }
+    }
+    const g = $("drag-ghost");
+    if (d.moved && g) {
+      g.style.left = (ev.clientX - 28) + "px";
+      g.style.top = (ev.clientY - 28) + "px";
+    }
+  }
   function bindInvSlot(el) {
     el.addEventListener("pointerdown", (ev) => {
       if (ev.button && ev.button !== 0) return;
+      ev.preventDefault();
       ev.stopPropagation();
       const row = el.dataset.row;
       const i = Number(el.dataset.i);
@@ -4307,26 +4539,15 @@ body.four-finger.lefty #btn-b {
         moved: false,
         sl: slotItem(row, i),
         pointerId: ev.pointerId,
+        el,
       };
       el.classList.add("lift");
+      try { el.setPointerCapture(ev.pointerId); } catch {}
     });
     el.addEventListener("pointermove", (ev) => {
       const d = state.drag;
-      if (!d || d.row !== el.dataset.row || d.i !== Number(el.dataset.i)) return;
-      const dist = Math.hypot(ev.clientX - d.x, ev.clientY - d.y);
-      if (!d.moved && dist > 22) {
-        d.moved = true;
-        const g = $("drag-ghost");
-        if (g && d.sl) {
-          g.classList.remove("hidden");
-          g.innerHTML = '<img alt="" src="' + itemIcon(d.sl.id, 40) + '">';
-        }
-      }
-      const g = $("drag-ghost");
-      if (d.moved && g) {
-        g.style.left = (ev.clientX - 28) + "px";
-        g.style.top = (ev.clientY - 28) + "px";
-      }
+      if (!d || d.el !== el) return;
+      moveInvGhost(ev);
     });
     el.addEventListener("pointerup", (ev) => finishInvDrag(ev, el, false));
     el.addEventListener("pointercancel", (ev) => finishInvDrag(ev, el, true));
@@ -4335,6 +4556,15 @@ body.four-finger.lefty #btn-b {
       ev.stopPropagation();
       if (state.justDragged) return;
       tapInvSlot(el.dataset.row, Number(el.dataset.i));
+    });
+  }
+  if (!window.__dlInvDragDoc) {
+    window.__dlInvDragDoc = true;
+    document.addEventListener("pointermove", (ev) => {
+      if (state.drag) moveInvGhost(ev);
+    }, { passive: true });
+    document.addEventListener("pointerup", (ev) => {
+      if (state.drag) finishInvDrag(ev, state.drag.el, false);
     });
   }
   function tapInvSlot(row, i) {
@@ -4620,7 +4850,7 @@ body.four-finger.lefty #btn-b {
       if (seen.has(r.id)) return false; seen.add(r.id);
       if (tab && tab !== "tudo") {
         const cat = /machado|picareta|espada|porrete|lanca|arco/.test(r.id) ? "ferramentas"
-          : /bloco|porta|placa|bau|bancada|forno|skill_bench|cama|tocha|bote/.test(r.id) ? "construcao" : "utensilios";
+          : /bloco|porta|placa|bau|bancada|forno|skill_bench|cama|tocha|bote|flor_/.test(r.id) ? "construcao" : "utensilios";
         if (cat !== tab) return false;
       }
       return true;
@@ -4878,10 +5108,12 @@ body.four-finger.lefty #btn-b {
       const pl = placedAt(tx, ty);
       if (pl) {
         const isFlor = String(pl.id).indexOf("flor_") === 0;
-        const extra = isFlor ? 99 : ((pl.id === "bloco_pedra" || pl.id === "forno") ? info.rock : 1);
+        const isGrass = pl.id === "grama_alta";
+        const isWheat = pl.id === "trigo";
+        const extra = (isFlor || isGrass || isWheat) ? 99 : ((pl.id === "bloco_pedra" || pl.id === "forno" || pl.id === "bloco_diamante") ? info.rock : 1);
         pl.hp -= Math.max(1, extra);
         const cols = { flor_azul: "#3a6ad4", flor_vermelha: "#d44536", flor_amarela: "#e0b44b", flor_verde: "#4aaa3a" };
-        burst(ax, ay, isFlor ? (cols[pl.id] || "#fff") : "#c4a06a");
+        burst(ax, ay, isFlor ? (cols[pl.id] || "#fff") : isGrass ? "#5b9a4c" : isWheat ? "#e0b44b" : "#c4a06a");
         if (pl.hp <= 0) {
           if (state.dim) state.dim.placed = state.dim.placed.filter((x) => x !== pl);
           else {
@@ -4889,7 +5121,16 @@ body.four-finger.lefty #btn-b {
             ch.placed = ch.placed.filter((x) => x !== pl);
           }
           if (pl.items) pl.items.forEach((s) => { if (s) dropOrGive(s.id, s.n, tx, ty); });
-          dropOrGive(pl.id, 1, tx, ty);
+          if (isGrass) {
+            if (Math.random() < 0.05) dropOrGive("semente", 1, tx, ty);
+          } else if (isWheat) {
+            if ((pl.stage || 0) >= 3) {
+              dropOrGive("trigo", 1, tx, ty);
+              if (Math.random() < 0.45) dropOrGive("semente", 1, tx, ty);
+            } else if (Math.random() < 0.3) dropOrGive("semente", 1, tx, ty);
+          } else if (pl.id !== "terra_arada") {
+            dropOrGive(pl.id, 1, tx, ty);
+          }
           shareEdit({ kind: "unplace", tx, ty });
         } else shareEdit({ kind: "place", tx, ty, id: pl.id, hp: pl.hp, items: pl.items || null });
         break;
@@ -4933,6 +5174,7 @@ body.four-finger.lefty #btn-b {
           }
           dropOrGive("pedra", 1, tx, ty);
           if (Math.random() < 0.28) dropOrGive("carvao", 1, tx, ty);
+          if (rock.myth) onMythCrossBreak(rock);
         }
         shareEdit({ kind: "rock", tx, ty, hp: rock.hp });
         break;
@@ -5020,6 +5262,8 @@ body.four-finger.lefty #btn-b {
     if (slot.id === "bote") {
       if (t !== TILES.WATER) return showMsg("O bote só vai na água.");
       if (isSwampWater(tx, ty)) return showMsg("A água do pântano engole até o bote.");
+    } else if (slot.id === "semente") {
+      return showMsg("Use X / B na terra arada para plantar.");
     } else if (slot.id === "bloco_madeira" && t === TILES.WATER) {
       /* deck na água */
     } else {
@@ -5032,6 +5276,7 @@ body.four-finger.lefty #btn-b {
     if (slot.id === "bau_grande") placed.items = emptyRow(8);
     if (slot.id === "porta") placed.open = false;
     if (slot.id === "placa") placed.text = "";
+    if (slot.id === "armadilha") placed.on = false;
     if (state.dim) state.dim.placed.push(placed);
     else ensureChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK)).placed.push(placed);
     takeFromSlot(state.player.hot, state.hotSel, 1);
@@ -5040,8 +5285,86 @@ body.four-finger.lefty #btn-b {
     shareEdit({ kind: "place", tx, ty, id: placed.id, hp: placed.hp, items: placed.items || null, open: placed.open, text: placed.text || "" });
   }
 
+  function onMythCrossBreak(rock) {
+    if (!isNight()) {
+      state.mythFail = state.mythFail || {};
+      state.mythFail[rock.myth] = true;
+      return;
+    }
+    if (state.mythFail && state.mythFail[rock.myth]) return;
+    let left = 0;
+    for (const ch of state.chunks.values()) {
+      for (const r of (ch.rocks || [])) if (r.myth === rock.myth && r !== rock) left++;
+    }
+    if (left > 0) return;
+    const p = state.player;
+    showMsg("A cruz se parte. Sombras saem da terra.");
+    for (let i = 0; i < 5; i++) {
+      const a = (Math.PI * 2 * i) / 5;
+      const e = makeEnemy(p.x + Math.cos(a) * 46, p.y + Math.sin(a) * 46, (Math.random() * 9999) | 0);
+      e.kind = "sombra"; e.hp = e.maxHp = 16; e.spd = 28; e.dmg = 4; e.phase = true; e.gold = 8;
+      state.nightMobs.push(e);
+    }
+  }
+  function wearingWarm() {
+    const p = state.player;
+    if (!p) return false;
+    const ids = [p.helm && p.helm.id, p.chest && p.chest.id].filter(Boolean);
+    return ids.some((id) => id === "cachecol" || String(id).indexOf("couro") >= 0);
+  }
+  function isHoe(s) { return !!(s && ITEM[s.id] && ITEM[s.id].hoe); }
+  function tillSoil() {
+    const { tx, ty } = facingTile();
+    const bio = biomeAt(tx, ty, state.room && state.room.seed);
+    if (bio === "swamp" || bio === "sadlands") return showMsg("Essa terra não aceita arado.");
+    if (tileAt(tx, ty) !== TILES.GRASS) return showMsg("Arada só em grama.");
+    if (placedAt(tx, ty) || treeAt(tx, ty) || rockAt(tx, ty) || oreAt(tx, ty)) return showMsg("Tira o que está no chão primeiro.");
+    const ch = state.dim || ensureChunk(Math.floor(tx / CHUNK), Math.floor(ty / CHUNK));
+    ch.placed = ch.placed || [];
+    ch.placed.push({ tx, ty, id: "terra_arada", hp: 2 });
+    const hoe = selectedSlot();
+    if (hoe && hoe.dur != null) {
+      hoe.dur -= 1;
+      if (hoe.dur <= 0) {
+        const hot = state.player.hot;
+        if (hot[state.hotSel] === hoe) hot[state.hotSel] = null;
+        showMsg("A enxada quebrou.");
+      }
+    }
+    showMsg("Terra arada.");
+    shareEdit({ kind: "place", tx, ty, id: "terra_arada", hp: 2 });
+    renderHotbar();
+  }
   function tryInteract() {
     if (state.mode !== "play") return;
+    if (isHoe(selectedSlot())) { tillSoil(); return; }
+    if (selectedSlot() && selectedSlot().id === "semente") {
+      const { tx, ty } = facingTile();
+      const pl = placedAt(tx, ty);
+      if (pl && pl.id === "terra_arada") {
+        pl.id = "trigo"; pl.stage = 0; pl.grow = 0; pl.hp = 2;
+        takeFromSlot(state.player.hot, state.hotSel, 1);
+        showMsg("Plantou. Agora é esperar... esperar... esperar...");
+        shareEdit({ kind: "place", tx, ty, id: "trigo", hp: 2, stage: 0 });
+        renderHotbar();
+        return;
+      }
+    }
+    if (state.player && state.player.root > 0) {
+      state.player.root = Math.max(0, state.player.root - 1.7);
+      showMsg(state.player.root > 0 ? "Você se solta um pouco." : "Livre da armadilha.");
+      return;
+    }
+    if (state.nearbyTrap) {
+      state.nearbyTrap.on = !state.nearbyTrap.on;
+      showMsg(state.nearbyTrap.on ? "Armadilha armada." : "Armadilha desarmada.");
+      shareEdit({ kind: "place", tx: state.nearbyTrap.tx, ty: state.nearbyTrap.ty, id: "armadilha", hp: state.nearbyTrap.hp, on: state.nearbyTrap.on });
+      return;
+    }
+    if (state.nearbyArtisan) {
+      openArtisan();
+      return;
+    }
     if (state.nearbyNpc) {
       openNpc(state.nearbyNpc);
       return;
@@ -5335,6 +5658,7 @@ body.four-finger.lefty #btn-b {
       !$("furnace").classList.contains("hidden") ||
       !$("bench").classList.contains("hidden") ||
       ($("skill-bench") && !$("skill-bench").classList.contains("hidden")) ||
+      ($("artisan") && !$("artisan").classList.contains("hidden")) ||
       state.dead ||
       ($("death") && !$("death").classList.contains("hidden"));
     if (paused) return;
@@ -5353,11 +5677,24 @@ body.four-finger.lefty #btn-b {
       }
     }
     if (!night && state.wasNight) {
-      state.nightMobs.forEach((e) => { e.alive = false; });
-      state.nightMobs = [];
+      state.nightMobs.forEach((e) => {
+        const tb = biomeAt(Math.floor(e.x / TILE), Math.floor(e.y / TILE), state.room && state.room.seed);
+        if (e.night && tb !== "sadlands") e.alive = false;
+      });
+      state.nightMobs = state.nightMobs.filter((e) => e.alive);
       showMsg("O sol nasce. Os monstros fogem.");
     }
     state.wasNight = night;
+    const pBio = biomeAt(Math.floor(state.player.x / TILE), Math.floor(state.player.y / TILE), state.room && state.room.seed);
+    if (pBio === "sadlands") {
+      state.sadSpawnT = (state.sadSpawnT || 0) + dt;
+      if (state.sadSpawnT > 11) {
+        state.sadSpawnT = 0;
+        spawnNightMobs(1);
+        const last = state.nightMobs[state.nightMobs.length - 1];
+        if (last) last.night = false;
+      }
+    }
 
     state.animalT = (state.animalT || 0) + dt;
     if (state.animalT > 7) {
@@ -5368,6 +5705,18 @@ body.four-finger.lefty #btn-b {
     if (state.treeT > 16) {
       state.treeT = 0;
       tryGrowTree();
+    }
+    const growSrc = state.dim ? [state.dim] : state.chunks.values();
+    for (const ch of growSrc) {
+      for (const pl of (ch.placed || [])) {
+        if (pl.id !== "trigo") continue;
+        pl.grow = (pl.grow || 0) + dt;
+        if (pl.grow > 42 && (pl.stage || 0) < 3) {
+          pl.grow = 0;
+          pl.stage = (pl.stage || 0) + 1;
+          if (pl.stage === 3) spawnFloat(pl.tx * TILE + 20, pl.ty * TILE, "maduro", "#e0b44b");
+        }
+      }
     }
 
     if (state.fishing) {
@@ -5405,9 +5754,29 @@ body.four-finger.lefty #btn-b {
     if ($("air-wrap")) $("air-wrap").classList.toggle("hidden", !wet && (p.air == null || p.air >= 20));
     if ($("air-fill")) $("air-fill").style.width = Math.max(0, p.air || 0) / 20 * 100 + "%";
 
-    const { ix, iy, moving } = inputVector();
+    if (p.root > 0) {
+      p.root -= dt;
+      if (p.root < 0) p.root = 0;
+    }
+    let { ix, iy, moving } = inputVector();
+    if (p.root > 0) { ix = 0; iy = 0; moving = false; }
+    const inSad = biomeAt(Math.floor(p.x / TILE), Math.floor(p.y / TILE), state.room && state.room.seed) === "sadlands";
+    if (inSad && !wearingWarm()) {
+      p.coldAge = (p.coldAge || 0) + dt;
+      p.coldT = (p.coldT || 0) + dt;
+      if (p.coldT > 14) {
+        p.coldT = 0;
+        p.hunger = Math.max(0, (p.hunger || 20) - 1);
+        showMsg("O frio das sadlands rói a fome.");
+        if (p.hunger <= 0 && hurtPlayer(1)) return;
+      }
+    } else {
+      p.coldT = 0;
+      p.coldAge = Math.max(0, (p.coldAge || 0) - dt * 1.4);
+    }
     let spd = wet ? 88 : 145;
     if (wearingArmor()) spd *= 0.82;
+    if (inSad && !wearingWarm()) spd *= (p.coldAge || 0) > 40 ? 0.58 : (p.coldAge || 0) > 18 ? 0.72 : 0.88;
     if (moving) {
       p.dirx = ix; p.diry = iy;
       const len = Math.hypot(p.dirx, p.diry) || 1;
@@ -5506,6 +5875,8 @@ body.four-finger.lefty #btn-b {
     state.nearbyBed = false;
     state.nearbyTable = false;
     state.nearbySkillBench = false;
+    state.nearbyArtisan = false;
+    state.nearbyTrap = null;
     state.nearbyFurnace = false;
     state.nearbyChest = null;
     state.nearbyDoor = null;
@@ -5522,6 +5893,8 @@ body.four-finger.lefty #btn-b {
     const nearPl = placedAt(tx, ty) || placedAt(standTx, standTy);
     if (nearPl && nearPl.id === "bancada") state.nearbyTable = true;
     if (nearPl && nearPl.id === "skill_bench") state.nearbySkillBench = true;
+    if (nearPl && nearPl.id === "bancada_artesao") state.nearbyArtisan = true;
+    if (nearPl && nearPl.id === "armadilha") state.nearbyTrap = nearPl;
     if (nearPl && nearPl.id === "forno") state.nearbyFurnace = true;
     if (nearPl && (nearPl.id === "bau" || nearPl.id === "bau_grande")) state.nearbyChest = nearPl;
     if (nearPl && nearPl.id === "porta") state.nearbyDoor = nearPl;
@@ -5586,6 +5959,8 @@ body.four-finger.lefty #btn-b {
     if (state.nearbyNpc) state.hint = "X / B · falar com " + state.nearbyNpc.name;
     else if (state.nearbyTable) state.hint = "X / B · usar a bancada";
     else if (state.nearbySkillBench) state.hint = "X / B · bancada de skill";
+    else if (state.nearbyArtisan) state.hint = "X / B · bancada do artesão";
+    else if (state.nearbyTrap) state.hint = state.nearbyTrap.on ? "X / B · desarmar" : "X / B · armar a armadilha";
     else if (state.nearbyFurnace) state.hint = "X / B · usar o forno";
     else if (state.nearbyChest) state.hint = "X / B · abrir o baú";
     else if (state.nearbyDoor) state.hint = state.nearbyDoor.open ? "X / B · fechar a porta" : "X / B · abrir a porta";
@@ -5603,6 +5978,7 @@ body.four-finger.lefty #btn-b {
     else if (selectedSlot() && selectedSlot().id === "vara") state.hint = "Z / A · pescar na água";
     else if (selectedSlot() && PLACEABLE.has(selectedSlot().id)) state.hint = "Z / A · colocar " + ITEM[selectedSlot().id].name;
     else if (state.nearbyNode) state.hint = "Z / A · coletar " + state.nearbyNode;
+    else if (outsideWorld(Math.floor(p.x / TILE) + Math.sign(p.x||1)*8, Math.floor(p.y / TILE))) state.hint = "Borda do mundo · Konami libera a passagem";
     else if (night) state.hint = "Noite · procure uma cama na vila";
     else if (state.dungeonKnown && state.portals && state.portals[0]) {
       const d = state.portals[0];
@@ -5637,14 +6013,31 @@ body.four-finger.lefty #btn-b {
       if (!e.alive) continue;
       e.hurt = Math.max(0, e.hurt - dt);
       e.cd = Math.max(0, e.cd - dt);
+      if (e.root > 0) { e.root -= dt; continue; }
       const dx = p.x - e.x, dy = p.y - e.y;
       const dist = Math.hypot(dx, dy);
       const glow = torchLightAt(e.x, e.y);
-      if (glow > 0.32) {
-        const nx = e.x - (dx / (dist || 1)) * e.spd * dt;
-        const ny = e.y - (dy / (dist || 1)) * e.spd * dt;
-        if (!worldBlocked(nx, e.y, e.r || 12)) e.x = nx;
-        if (!worldBlocked(e.x, ny, e.r || 12)) e.y = ny;
+      const phase = e.kind === "sombra" || e.phase;
+      const tryMove = (nx, ny) => {
+        if (phase || !worldBlocked(nx, e.y, e.r || 12)) e.x = nx;
+        if (phase || !worldBlocked(e.x, ny, e.r || 12)) e.y = ny;
+      };
+      if (e.kind === "gosma") {
+        e.hopT = (e.hopT || 0) - dt;
+        if (e.hopping > 0) {
+          e.hopping -= dt;
+          const hs = 96;
+          tryMove(e.x + (e.hopx || 0) * hs * dt, e.y + (e.hopy || 0) * hs * dt);
+        } else if (e.hopT <= 0 && dist < 220) {
+          const l = dist || 1;
+          e.hopx = dx / l; e.hopy = dy / l;
+          e.hopping = 0.28; e.hopT = 0.85 + Math.random() * 0.4;
+        }
+        if (glow > 0.32) {
+          tryMove(e.x - (dx / (dist || 1)) * 20 * dt, e.y - (dy / (dist || 1)) * 20 * dt);
+        }
+      } else if (glow > 0.32) {
+        tryMove(e.x - (dx / (dist || 1)) * e.spd * dt, e.y - (dy / (dist || 1)) * e.spd * dt);
       } else if (e.kind === "esqueleto" && dist < 210 && dist > 36 && e.cd <= 0 && !(e.night && inSafeVillage(p.x, p.y))) {
         e.cd = 1.55;
         const l = dist || 1;
@@ -5653,10 +6046,7 @@ body.four-finger.lefty #btn-b {
       } else if (e.night && inSafeVillage(p.x, p.y)) {
         /* vila é zona segura */
       } else if (dist < 220 && dist > 16) {
-        const nx = e.x + (dx / dist) * e.spd * dt;
-        const ny = e.y + (dy / dist) * e.spd * dt;
-        if (!worldBlocked(nx, e.y, e.r || 12)) e.x = nx;
-        if (!worldBlocked(e.x, ny, e.r || 12)) e.y = ny;
+        tryMove(e.x + (dx / dist) * e.spd * dt, e.y + (dy / dist) * e.spd * dt);
       }
       if (dist < 22 && e.cd <= 0 && !(e.night && inSafeVillage(p.x, p.y))) {
         e.cd = 0.9;
@@ -5793,8 +6183,11 @@ body.four-finger.lefty #btn-b {
       if (!e.alive) continue;
       if (!tileVisible(Math.floor(e.x / TILE), Math.floor(e.y / TILE))) continue;
       const s = worldToScreen(e.x, e.y);
+      const hopY = (e.kind === "gosma" && e.hopping > 0) ? -10 : 0;
       ctx.fillStyle = e.hurt > 0 ? "#fff" : (e.kind === "esqueleto" ? "#e8e4d8" : e.kind === "sombra" ? "#4b3a6a" : e.kind === "lobo" ? "#5a4638" : e.kind === "olho" ? "#6a3060" : "#5aa35a");
-      ctx.beginPath(); ctx.arc(s.x, s.y, e.r, 0, 7); ctx.fill();
+      if (e.kind === "sombra") ctx.globalAlpha = 0.72;
+      ctx.beginPath(); ctx.arc(s.x, s.y + hopY, e.r, 0, 7); ctx.fill();
+      ctx.globalAlpha = 1;
       ctx.fillStyle = "#2a1030";
       ctx.beginPath(); ctx.arc(s.x - 4, s.y - 3, 2, 0, 7); ctx.arc(s.x + 4, s.y - 3, 2, 0, 7); ctx.fill();
       ctx.fillStyle = "#3a1010";
@@ -5892,7 +6285,27 @@ body.four-finger.lefty #btn-b {
       ctx.globalAlpha = 1;
     }
 
-    const light = Math.min(1, dayLight() + torchLightAt(p.x, p.y) * 0.7);
+    const ptx = Math.floor(p.x / TILE), pty = Math.floor(p.y / TILE);
+    const fog = state.room ? forestFogAt(ptx, pty, state.room.seed) : 0;
+    const torch = torchLightAt(p.x, p.y);
+    const light = Math.min(1, dayLight() + torch * 0.7);
+    if (fog > 0.05) {
+      const a = Math.max(0, fog * 0.55 - torch * 0.42);
+      const ox = Math.sin(state.time * 0.11) * 18;
+      const oy = Math.cos(state.time * 0.08) * 14;
+      ctx.fillStyle = "rgba(210,220,214," + a.toFixed(3) + ")";
+      ctx.fillRect(0, 0, W, H);
+      for (let i = 0; i < 7; i++) {
+        const gx = (W * ((i * 0.17 + state.time * 0.02) % 1) + ox);
+        const gy = (H * ((i * 0.23 + state.time * 0.015) % 1) + oy);
+        const rg = ctx.createRadialGradient(gx, gy, 10, gx, gy, 140);
+        rg.addColorStop(0, "rgba(230,236,232," + (0.18 + a * 0.25).toFixed(3) + ")");
+        rg.addColorStop(1, "rgba(230,236,232,0)");
+        ctx.fillStyle = rg;
+        ctx.beginPath(); ctx.arc(gx, gy, 140, 0, 7); ctx.fill();
+      }
+      if (torch < 0.2 && fog > 0.35) state.hint = "Neblina da floresta · uma tocha ajuda a ver";
+    }
     if (light < 0.94) {
       ctx.fillStyle = "rgba(4, 6, 16," + ((1 - light) * 0.88).toFixed(3) + ")";
       ctx.fillRect(0, 0, W, H);
@@ -5918,8 +6331,9 @@ body.four-finger.lefty #btn-b {
     if (state.drops) {
       for (const d of state.drops) {
         const s = worldToScreen(d.x, d.y);
-        ctx.fillStyle = "#fff8d0";
-        ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, 7); ctx.fill();
+        const id = d.stack && d.stack.id;
+        ctx.fillStyle = (id && FLOWER_COL[id]) || "#fff8d0";
+        ctx.beginPath(); ctx.arc(s.x, s.y, id && FLOWER_COL[id] ? 7 : 6, 0, 7); ctx.fill();
       }
     }
 
@@ -5941,12 +6355,14 @@ body.four-finger.lefty #btn-b {
 
   function drawTile(x, y, tile, tx, ty, t) {
     if (tile === TILES.WATER) {
-      const swamp = state.room && biomeAt(tx, ty, state.room.seed) === "swamp";
+      const bioW = state.room ? biomeAt(tx, ty, state.room.seed) : "ocean";
+      const swamp = bioW === "swamp";
+      const ice = bioW === "sadlands";
       const w = 0.5 + 0.5 * Math.sin((tx + ty) * 0.4 + t * 1.6);
-      ctx.fillStyle = swamp ? (w > 0.55 ? "#4a6a22" : "#2a4a18") : (w > 0.55 ? "#1d6a92" : "#155a82");
+      ctx.fillStyle = ice ? (w > 0.55 ? "#f4f8fc" : "#d0e0ee") : swamp ? (w > 0.55 ? "#4a6a22" : "#2a4a18") : (w > 0.55 ? "#1d6a92" : "#155a82");
       ctx.fillRect(x, y, TILE + 1, TILE + 1);
-      ctx.fillStyle = swamp ? "rgba(160,220,80,0.18)" : "rgba(180,230,255,0.12)";
-      ctx.fillRect(x + 8, y + (t * 12 + tx * 5) % TILE, 10, 2);
+      ctx.fillStyle = ice ? "rgba(255,255,255,0.35)" : swamp ? "rgba(160,220,80,0.18)" : "rgba(180,230,255,0.12)";
+      ctx.fillRect(x + 8, y + (ice ? 12 : (t * 12 + tx * 5) % TILE), ice ? 14 : 10, ice ? 3 : 2);
       return;
     }
     if (tile === TILES.SAND) ctx.fillStyle = "#e6d2a2";
@@ -5955,6 +6371,7 @@ body.four-finger.lefty #btn-b {
       if (bio === "jungle") ctx.fillStyle = ((tx + ty) & 1) ? "#2f7a38" : "#1e5a28";
       else if (bio === "forest") ctx.fillStyle = ((tx + ty) & 1) ? "#3d7a3a" : "#2f6230";
       else if (bio === "swamp") ctx.fillStyle = ((tx + ty) & 1) ? "#4a6a28" : "#2e4a24";
+      else if (bio === "sadlands") ctx.fillStyle = ((tx + ty) & 1) ? "#eef4f8" : "#dce6ee";
       else ctx.fillStyle = ((tx + ty) & 1) ? "#4f8f45" : "#5b9a4c";
     }
     else if (tile === TILES.PATH) ctx.fillStyle = "#c4a06a";
@@ -6008,6 +6425,61 @@ body.four-finger.lefty #btn-b {
       ctx.beginPath(); ctx.moveTo(x, y + 10); ctx.lineTo(x, y - 2); ctx.stroke();
       ctx.fillStyle = col;
       ctx.beginPath(); ctx.arc(x, y - 6, 5, 0, 7); ctx.fill();
+      return;
+    }
+    if (pl.id === "grama_alta") {
+      ctx.fillStyle = "#3d7a38";
+      ctx.fillRect(x - 2, y + 2, 3, 10);
+      ctx.fillRect(x + 2, y, 3, 12);
+      ctx.fillRect(x + 6, y + 4, 2, 8);
+      return;
+    }
+    if (pl.id === "terra_arada") {
+      ctx.fillStyle = "#6b4423";
+      ctx.fillRect(x - 18, y - 18, 36, 36);
+      ctx.fillStyle = "#4a2e16";
+      ctx.fillRect(x - 16, y - 6, 32, 3);
+      ctx.fillRect(x - 16, y + 4, 32, 3);
+      return;
+    }
+    if (pl.id === "trigo") {
+      const st = pl.stage || 0;
+      ctx.fillStyle = st >= 3 ? "#e0b44b" : st >= 2 ? "#c4a06a" : "#6b8f3a";
+      ctx.fillRect(x - 2, y + 8 - st * 4, 3, 8 + st * 4);
+      ctx.fillRect(x + 3, y + 10 - st * 4, 3, 6 + st * 4);
+      if (st >= 3) {
+        ctx.fillStyle = "#ffe08a";
+        ctx.fillRect(x - 3, y - 8, 4, 4);
+        ctx.fillRect(x + 2, y - 6, 4, 4);
+      }
+      return;
+    }
+    if (pl.id === "bloco_ouro") {
+      ctx.fillStyle = "#c9a227";
+      ctx.fillRect(x - 18, y - 18, 36, 36);
+      ctx.fillStyle = "#ffe08a";
+      ctx.fillRect(x - 10, y - 10, 20, 20);
+      return;
+    }
+    if (pl.id === "bloco_diamante") {
+      ctx.fillStyle = "#2a8a96";
+      ctx.fillRect(x - 18, y - 18, 36, 36);
+      ctx.fillStyle = "#7af0f8";
+      ctx.beginPath(); ctx.moveTo(x, y - 12); ctx.lineTo(x + 12, y); ctx.lineTo(x, y + 12); ctx.lineTo(x - 12, y); ctx.fill();
+      return;
+    }
+    if (pl.id === "armadilha") {
+      ctx.strokeStyle = pl.on ? "#c44536" : "#6b4423";
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x - 12, y - 12, 24, 24);
+      ctx.beginPath(); ctx.moveTo(x - 10, y - 10); ctx.lineTo(x + 10, y + 10); ctx.moveTo(x + 10, y - 10); ctx.lineTo(x - 10, y + 10); ctx.stroke();
+      return;
+    }
+    if (pl.id === "bancada_artesao") {
+      ctx.fillStyle = "#8a6a3a";
+      ctx.fillRect(x - 14, y - 6, 28, 14);
+      ctx.fillStyle = "#c44536";
+      ctx.fillRect(x - 6, y - 10, 12, 6);
       return;
     }
     if (pl.id === "bote") {
@@ -6089,7 +6561,7 @@ body.four-finger.lefty #btn-b {
     ctx.fillRect(x - 14, y - 22, 28 * Math.max(0, pl.hp / max), 4);
   }
   function drawOre(x, y, ore) {
-    const col = ore.id === "ferro_bruto" ? "#8a9098" : ore.id === "ouro_bruto" ? "#e0b44b" : "#c47a3a";
+    const col = ore.id === "diamante_bruto" ? "#7af0f8" : ore.id === "ferro_bruto" ? "#8a9098" : ore.id === "ouro_bruto" ? "#e0b44b" : "#c47a3a";
     ctx.fillStyle = "#5a5858";
     ctx.beginPath();
     ctx.moveTo(x - 12, y + 8); ctx.lineTo(x - 8, y - 10); ctx.lineTo(x + 10, y - 6); ctx.lineTo(x + 12, y + 8);
@@ -6099,7 +6571,7 @@ body.four-finger.lefty #btn-b {
     ctx.fillStyle = "#3a1010";
     ctx.fillRect(x - 12, y - 16, 24, 3);
     ctx.fillStyle = "#d05040";
-    ctx.fillRect(x - 12, y - 16, 24 * Math.max(0, ore.hp / 8), 3);
+    ctx.fillRect(x - 12, y - 16, 24 * Math.max(0, ore.hp / (ore.id === "diamante_bruto" ? 12 : 8)), 3);
   }
   function drawRock(x, y) {
     ctx.fillStyle = "#7b8088";
