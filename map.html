@@ -70,6 +70,7 @@
       <option value="-5799">redonda -5799</option>
       <option value="-9521">dois navios -9521</option>
       <option value="-11087">dungeon spawn -11087</option>
+      <option value="2441979758">3 vilas · Chantyllynny__</option>
       <option value="0">zero 0</option>
       <option value="4294967296">2³² 4294967296</option>
     </select>
@@ -81,6 +82,7 @@
       <h2>Como usar</h2>
       <p>Mesmo gerador do jogo: altura, bioma e estruturas. Arraste o mapa, role para zoom, clique num ponto para ver o tile.</p>
       <p class="note">O spawn é o centro (0, 0). Marcadores são as estruturas que o mundo garante no começo + as que nasceriam nos chunks visíveis.</p>
+      <p class="note"><b>Chantyllynny__</b> = seed <code>2441979758</code>. Planície enorme a leste do spawn. Vilas só nascem se o chunk passar o dado (9,5%) e não tiver outra a menos de 24 blocos. Em continente liso isso vira uma <b>grade de ~32 blocos</b> (2 chunks) — daí as 3 vilas em fila.</p>
 
       <h2>Legenda — chão</h2>
       <div class="legend">
@@ -90,6 +92,7 @@
         <div><span style="background:#6db36a"></span>Planície</div>
         <div><span style="background:#2f6b3a"></span>Floresta densa</div>
         <div><span style="background:#1d4a28"></span>Selva</div>
+        <div><span style="background:#dce6ee"></span>Sadlands / neve</div>
       </div>
 
       <h2>Legenda — marcas</h2>
@@ -192,12 +195,13 @@
         return "ocean";
       }
       if (moist > 0.56 && heat < 0.44) return "swamp";
+      if (heat > 0.70 && moist < 0.34 && moist > 0.12) return "sadlands";
       if (moist > 0.60 && heat > 0.46) return "jungle";
       if (moist > 0.52) return "forest";
       return "plains";
     }
     function biomeLabel(b) {
-      return b === "jungle" ? "Selva" : b === "forest" ? "Floresta densa" : b === "swamp" ? "Pântano de slimes" : b === "ocean" ? "Mar" : "Planície";
+      return b === "jungle" ? "Selva" : b === "forest" ? "Floresta densa" : b === "swamp" ? "Pântano de slimes" : b === "sadlands" ? "Sadlands" : b === "ocean" ? "Mar" : "Planície";
     }
     function findLandNear(seed, cx, cy, maxR = 80) {
       if (isLandH(heightAt(cx, cy, seed))) return { x: cx, y: cy };
@@ -262,6 +266,7 @@
       const b = biomeAt(tx, ty, seed);
       const tile = tileFromH(h);
       if (b === "ocean") return COLORS.ocean;
+      if (b === "sadlands") return tile === "water" ? [240,248,252] : [222,230,238];
       if (b === "swamp") return tile === "water" ? COLORS.swampW : COLORS.swamp;
       if (tile === "sand") return COLORS.sand;
       if (b === "jungle") return COLORS.jungle;
