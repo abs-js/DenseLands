@@ -1210,7 +1210,7 @@ body.four-finger.lefty #btn-b {
     <div id="drag-ghost" class="hidden"></div>
   </div>
 
-                        <script>
+                          <script>
 (() => {
   "use strict";
 
@@ -4143,6 +4143,51 @@ body.four-finger.lefty #btn-b {
     } else if (String(id).indexOf("capacete") === 0) {
       g.fillStyle = (id.indexOf("ferro")>=0) ? "#9aa4b2" : (id.indexOf("bronze")>=0) ? "#c47a3a" : "#8a5a32";
       g.beginPath(); g.arc(16, 16, 10, Math.PI, 0); g.fill(); g.fillRect(6, 16, 20, 6);
+    } else if (id === "diamante_bruto" || id === "diamante") {
+      g.fillStyle = id === "diamante" ? "#2a8a96" : "#3a5a58";
+      g.beginPath(); g.moveTo(16, 4); g.lineTo(26, 12); g.lineTo(16, 28); g.lineTo(6, 12); g.fill();
+      g.fillStyle = "#7af0f8";
+      g.beginPath(); g.moveTo(16, 8); g.lineTo(22, 13); g.lineTo(16, 22); g.lineTo(10, 13); g.fill();
+    } else if (id === "bloco_ouro") {
+      g.fillStyle = "#a07a18"; g.fillRect(5, 5, 22, 22);
+      g.fillStyle = "#e0b44b"; g.fillRect(7, 7, 18, 18);
+      g.fillStyle = "#ffe08a"; g.fillRect(10, 10, 12, 12);
+    } else if (id === "bloco_diamante") {
+      g.fillStyle = "#1a5a62"; g.fillRect(5, 5, 22, 22);
+      g.fillStyle = "#3ab0bc"; g.fillRect(7, 7, 18, 18);
+      g.fillStyle = "#7af0f8";
+      g.beginPath(); g.moveTo(16, 8); g.lineTo(24, 16); g.lineTo(16, 24); g.lineTo(8, 16); g.fill();
+    } else if (id === "semente") {
+      g.fillStyle = "#6b4423";
+      g.beginPath(); g.ellipse(16, 18, 6, 8, 0.3, 0, 7); g.fill();
+      g.fillStyle = "#c48a4a";
+      g.beginPath(); g.ellipse(15, 16, 3, 4, 0.3, 0, 7); g.fill();
+    } else if (id === "trigo") {
+      g.fillStyle = "#e0b44b";
+      g.fillRect(10, 8, 3, 16); g.fillRect(15, 6, 3, 18); g.fillRect(20, 9, 3, 15);
+      g.fillStyle = "#ffe08a";
+      g.fillRect(9, 6, 5, 4); g.fillRect(14, 4, 5, 4); g.fillRect(19, 7, 5, 4);
+    } else if (id === "terra_arada") {
+      g.fillStyle = "#6b4423"; g.fillRect(5, 8, 22, 16);
+      g.fillStyle = "#4a2e16"; g.fillRect(6, 12, 20, 2); g.fillRect(6, 18, 20, 2);
+    } else if (id === "grama_alta") {
+      g.fillStyle = "#3d7a38";
+      g.fillRect(8, 10, 3, 16); g.fillRect(14, 6, 3, 20); g.fillRect(20, 12, 3, 14);
+      g.fillStyle = "#5b9a4c";
+      g.fillRect(11, 14, 2, 12);
+    } else if (String(id).indexOf("enxada") === 0) {
+      g.fillStyle = "#6b4423"; g.fillRect(14, 8, 4, 18);
+      g.fillStyle = (ITEM[id] && ITEM[id].color) || "#8a9098";
+      g.fillRect(8, 8, 16, 5);
+      g.fillRect(8, 8, 4, 10);
+    } else if (id === "armadilha") {
+      g.strokeStyle = "#c44536"; g.lineWidth = 2;
+      g.strokeRect(6, 6, 20, 20);
+      g.beginPath(); g.moveTo(8, 8); g.lineTo(24, 24); g.moveTo(24, 8); g.lineTo(8, 24); g.stroke();
+    } else if (id === "bancada_artesao") {
+      g.fillStyle = "#8a6a3a"; g.fillRect(5, 14, 22, 10);
+      g.fillStyle = "#c44536"; g.fillRect(10, 8, 12, 8);
+      g.fillStyle = "#e0b44b"; g.fillRect(12, 10, 8, 4);
     } else {
       g.fillStyle = "#888"; g.fillRect(8, 8, 16, 16);
     }
