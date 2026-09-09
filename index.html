@@ -1210,7 +1210,7 @@ body.four-finger.lefty #btn-b {
     <div id="drag-ghost" class="hidden"></div>
   </div>
 
-                          <script>
+                            <script>
 (() => {
   "use strict";
 
@@ -3325,41 +3325,6 @@ body.four-finger.lefty #btn-b {
     state.player = makePlayer(spawn);
     state.cam.x = state.player.x;
     state.cam.y = state.player.y;
-    function sprungTrap(pl) {
-      if (!pl || pl.id !== "armadilha" || !pl.on) return false;
-      pl.on = false;
-      burst(pl.tx * TILE + 20, pl.ty * TILE + 20, "#c44536");
-      shareEdit({ kind: "place", tx: pl.tx, ty: pl.ty, id: "armadilha", hp: pl.hp, on: false });
-      return true;
-    }
-    const pTile = placedAt(Math.floor(p.x / TILE), Math.floor(p.y / TILE));
-    if (sprungTrap(pTile) && (!p.trapCd || p.trapCd <= 0)) {
-      p.root = 3.2;
-      p.trapCd = 0.8;
-      if (hurtPlayer(8)) return;
-      showMsg("A armadilha te prendeu. X / B para se soltar mais rápido.");
-    }
-    p.trapCd = Math.max(0, (p.trapCd || 0) - dt);
-    for (const e of allEnemies()) {
-      if (!e.alive) continue;
-      const tpl = placedAt(Math.floor(e.x / TILE), Math.floor(e.y / TILE));
-      if (sprungTrap(tpl)) {
-        e.root = 3.4;
-        e.hp -= 10;
-        e.hurt = 0.3;
-        if (e.hp <= 0) { e.alive = false; dropItem("ouro", e.gold || 3, e.x, e.y, true); }
-      }
-    }
-    for (const a of allAnimals()) {
-      if (!a.alive) continue;
-      const tpl = placedAt(Math.floor(a.x / TILE), Math.floor(a.y / TILE));
-      if (sprungTrap(tpl)) {
-        a.root = 3;
-        a.hp -= 8;
-        if (a.hp <= 0) a.alive = false;
-      }
-    }
-
     markVisitedFromPlayer();
     persist();
     showLoading(() => {
@@ -5798,6 +5763,41 @@ body.four-finger.lefty #btn-b {
     }
     if ($("air-wrap")) $("air-wrap").classList.toggle("hidden", !wet && (p.air == null || p.air >= 20));
     if ($("air-fill")) $("air-fill").style.width = Math.max(0, p.air || 0) / 20 * 100 + "%";
+
+    function sprungTrap(pl) {
+      if (!pl || pl.id !== "armadilha" || !pl.on) return false;
+      pl.on = false;
+      burst(pl.tx * TILE + 20, pl.ty * TILE + 20, "#c44536");
+      shareEdit({ kind: "place", tx: pl.tx, ty: pl.ty, id: "armadilha", hp: pl.hp, on: false });
+      return true;
+    }
+    const pTile = placedAt(Math.floor(p.x / TILE), Math.floor(p.y / TILE));
+    if (sprungTrap(pTile) && (!p.trapCd || p.trapCd <= 0)) {
+      p.root = 3.2;
+      p.trapCd = 0.8;
+      if (hurtPlayer(8)) return;
+      showMsg("A armadilha te prendeu. X / B para se soltar mais rápido.");
+    }
+    p.trapCd = Math.max(0, (p.trapCd || 0) - dt);
+    for (const e of allEnemies()) {
+      if (!e.alive) continue;
+      const tpl = placedAt(Math.floor(e.x / TILE), Math.floor(e.y / TILE));
+      if (sprungTrap(tpl)) {
+        e.root = 3.4;
+        e.hp -= 10;
+        e.hurt = 0.3;
+        if (e.hp <= 0) { e.alive = false; dropItem("ouro", e.gold || 3, e.x, e.y, true); }
+      }
+    }
+    for (const a of allAnimals()) {
+      if (!a.alive) continue;
+      const tpl = placedAt(Math.floor(a.x / TILE), Math.floor(a.y / TILE));
+      if (sprungTrap(tpl)) {
+        a.root = 3;
+        a.hp -= 8;
+        if (a.hp <= 0) a.alive = false;
+      }
+    }
 
     if (p.root > 0) {
       p.root -= dt;
