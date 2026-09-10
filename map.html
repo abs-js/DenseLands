@@ -71,8 +71,12 @@
       <option value="-9521">dois navios -9521</option>
       <option value="-11087">dungeon spawn -11087</option>
       <option value="2441979758">3 vilas · Chantyllynny__</option>
+      <option value="77">neve 77</option>
+      <option value="404">deserto 404</option>
+      <option value="1204">pântano 1204</option>
+      <option value="66">selva 66</option>
+      <option value="-7">costa -7</option>
       <option value="0">zero 0</option>
-      <option value="4294967296">2³² 4294967296</option>
     </select>
     <button type="button" class="ghost" id="center">Ir ao spawn</button>
     <span id="eff" style="font-size:13px;opacity:.85"></span>
@@ -80,24 +84,26 @@
   <div class="layout">
     <aside>
       <h2>Como usar</h2>
-      <p>Mesmo gerador do jogo: altura, bioma e estruturas. Arraste o mapa, role para zoom, clique num ponto para ver o tile.</p>
-      <p class="note">O spawn é o centro (0, 0). Marcadores são as estruturas que o mundo garante no começo + as que nasceriam nos chunks visíveis.</p>
-      <p class="note"><b>Chantyllynny__</b> = seed <code>2441979758</code>. Planície enorme a leste do spawn. Vilas só nascem se o chunk passar o dado (9,5%) e não tiver outra a menos de 24 blocos. Em continente liso isso vira uma <b>grade de ~32 blocos</b> (2 chunks) — daí as 3 vilas em fila.</p>
+      <p>Mesmo gerador do jogo atual: altura, bioma largo, costa rochosa rara, spawn fora de estrutura. Arraste, role o zoom, clique num ponto.</p>
+      <p class="note">O spawn <b>não é mais (0,0) cego</b>. O jogo primeiro planta as estruturas e depois procura terra livre num raio de 140. O ponto vermelho é esse spawn.</p>
 
       <h2>Legenda — chão</h2>
       <div class="legend">
         <div><span style="background:#2a6f9a"></span>Mar</div>
-        <div><span style="background:#3d6b4a"></span>Pântano (água/grama)</div>
-        <div><span style="background:#d2c07a"></span>Areia / praia</div>
+        <div><span style="background:#3d6b4a"></span>Pântano</div>
+        <div><span style="background:#d2c07a"></span>Areia</div>
         <div><span style="background:#6db36a"></span>Planície</div>
         <div><span style="background:#2f6b3a"></span>Floresta densa</div>
         <div><span style="background:#1d4a28"></span>Selva</div>
-        <div><span style="background:#dce6ee"></span>Sadlands / neve</div>
+        <div><span style="background:#b4c6dc"></span>Sadlands (azulada)</div>
+        <div><span style="background:#f7fbff"></span>Planície nevada</div>
+        <div><span style="background:#d4b46a"></span>Deserto</div>
+        <div><span style="background:#8a8680"></span>Costa rochosa</div>
       </div>
 
       <h2>Legenda — marcas</h2>
       <div>
-        <div><i class="mk" style="background:#c44536"></i>Spawn</div>
+        <div><i class="mk" style="background:#c44536"></i>Spawn real</div>
         <div><i class="mk" style="background:#e0b44b"></i>Vila</div>
         <div><i class="mk" style="background:#7a4ac8"></i>Casa de mago</div>
         <div><i class="mk" style="background:#222"></i>Masmorra</div>
@@ -105,6 +111,8 @@
         <div><i class="mk" style="background:#6b4423"></i>Casa abandonada</div>
         <div><i class="mk" style="background:#888"></i>Navio</div>
         <div><i class="mk" style="background:#aaa"></i>Filão</div>
+        <div><i class="mk" style="background:#eef4fa"></i>Iglu</div>
+        <div><i class="mk" style="background:#c9a227"></i>Pirâmide</div>
       </div>
 
       <h2>Ponto clicado</h2>
@@ -113,20 +121,18 @@
       <div id="list">Gere uma seed.</div>
 
       <h2>Onde a seed “buga”</h2>
-      <p>O gerador não quebra de um frame para o outro. Ele <b>dobra números em 32 bits</b> e, bem longe, perde precisão. Os pontos são estes:</p>
+      <p>O gerador atual <b>guarda seed negativa</b> como inteiro com sinal. −942 permanece −942 na caixa. Bits internos ainda são 32.</p>
       <table>
         <tr><th>Ponto</th><th>O que o jogo faz</th></tr>
-        <tr><td>Seed <code>0</code></td><td><code>0 &gt;&gt;&gt; 0</code> vira 0, que é falso, então usa hash do texto "0" — não é o mundo zero.</td></tr>
-        <tr><td>Seed negativa</td><td><code>n &gt;&gt;&gt; 0</code> vira <code>n + 2³²</code>. −942 e 4294966354 são o mesmo mundo.</td></tr>
-        <tr><td>Seed ≥ 2³² (4 294 967 296)</td><td>O número dá a volta. 2³² vira 0 e cai no hash do texto. 2³²+1 vira seed 1.</td></tr>
-        <tr><td>Número com vírgula</td><td><code>1.9 &gt;&gt;&gt; 0</code> = 1. A parte decimal some.</td></tr>
-        <tr><td>Texto / Infinity</td><td>Se não for um número finito, vira FNV-1a do texto. "abc" e 12345 não se misturam.</td></tr>
-        <tr><td>Inteiro &gt; 2⁵³</td><td>O JavaScript nem guarda o número certo. Seeds vizinhas viram a mesma.</td></tr>
-        <tr><td>Tile |x| ou |y| ≥ 2³¹</td><td><code>x | 0</code> no hash da coordenada dá a volta. O mapa <b>repete</b> como um toro de 2 147 483 648 tiles.</td></tr>
+        <tr><td>Seed <code>0</code></td><td>Zero é recusado e vira hash do texto "0". Não é o mundo nulo.</td></tr>
+        <tr><td>Seed negativa</td><td>Fica negativa na tela. <code>-942</code> e o antigo wrap <code>4294966354</code> ainda compartilham os mesmos 32 bits no ruído.</td></tr>
+        <tr><td>Seed &gt; 2³¹−1</td><td>Passa a unsigned 32 bits. 2441979758 cabe e é válida.</td></tr>
+        <tr><td>Seed ≥ 2³²</td><td>Dá a volta. 4294967296 cai no hash do texto.</td></tr>
+        <tr><td>Texto / Infinity</td><td>FNV-1a do texto.</td></tr>
+        <tr><td>|tile| ≥ 2³¹</td><td>O hash da coordenada dá a volta. O mapa repete.</td></tr>
+        <tr><td>|tile| &gt; 500 000</td><td>Borda do mundo no jogo. Konami abre.</td></tr>
       </table>
-      <p class="warn"><b>Visível no mapa:</b> digite <code>0</code> e <code>4294967296</code> — o mundo efetivo não é “zero”, é o hash da string. Digite <code>-942</code> e <code>4294966354</code> — o desenho é idêntico. Longe demais (zoom mínimo e pan absurdo) as faixas de bioma começam a “quadricular” porque o ruído perde casas decimais.</p>
-      <p><b>Por quê:</b> <code>hash2</code> faz <code>seed ^ imul(x|0) ^ imul(y|0)</code> e devolve um número 0–1. Operações <code>| 0</code> e <code>&gt;&gt;&gt; 0</code> no JS só enxergam 32 bits. O ruído <code>fbm</code> usa floats; quando a coordenada fica enorme, <code>tx * 0.042</code> não tem fração confiável e o fade do value-noise vira degrau.</p>
-      <p>No jogo normal ninguém anda 2 bilhões de blocos. O “bug” que o jogador encontra de verdade é só o da <b>caixa de seed</b>: negativo, zero e número grande demais não são o que você digitou.</p>
+      <p class="warn">Longe demais o ruído “quadricula” porque <code>tx * 0.042</code> perde casas decimais no float.</p>
     </aside>
     <div style="position:relative;min-height:240px">
       <canvas id="map"></canvas>
@@ -146,10 +152,17 @@
       return h >>> 0;
     }
     function seedFromInput(input) {
-      if (!input || !String(input).trim()) return (Math.random() * 0xffffffff) >>> 0;
-      const n = Number(input);
-      if (Number.isFinite(n) && String(input).trim() !== "") return (n >>> 0) || hashStr(input);
-      return hashStr(input);
+      const raw = String(input == null ? "" : input).trim();
+      if (!raw) return ((Math.random() * 0x7fffffff) | 1);
+      if (/^-?\d+$/.test(raw)) {
+        const n = Number(raw);
+        if (!Number.isFinite(n)) return hashStr(raw);
+        if (n < 0) return n | 0;
+        if (n === 0) return hashStr(raw);
+        if (n <= 2147483647) return n | 0;
+        return n >>> 0;
+      }
+      return hashStr(raw);
     }
     function hash2(x, y, seed) {
       let h = seed ^ Math.imul(x | 0, 374761393) ^ Math.imul(y | 0, 668265263);
@@ -188,30 +201,58 @@
       return "grass";
     }
     function biomeAt(tx, ty, seed) {
-      const moist = fbm(tx * 0.011, ty * 0.011, seed + 41);
-      const heat = fbm(tx * 0.008 + 28, ty * 0.008, seed + 77);
-      if (!isLandH(heightAt(tx, ty, seed))) {
+      const moist = fbm(tx * 0.0064, ty * 0.0064, seed + 41);
+      const heat = fbm(tx * 0.0046 + 28, ty * 0.0046, seed + 77);
+      const h = heightAt(tx, ty, seed);
+      if (!isLandH(h)) {
         if (moist > 0.56 && heat < 0.46) return "swamp";
         return "ocean";
       }
       if (moist > 0.56 && heat < 0.44) return "swamp";
-      if (heat > 0.70 && moist < 0.34 && moist > 0.12) return "sadlands";
+      if (heat > 0.74 && moist < 0.32) return "desert";
+      if (heat < 0.30 && moist < 0.58) return "snow";
+      if (heat > 0.62 && moist < 0.38 && moist > 0.10) return "sadlands";
+      if (h < 0.49 && heat > 0.36 && heat < 0.64 && moist < 0.52) {
+        let coast = false;
+        for (let d = 1; d <= 3 && !coast; d++) {
+          if (!isLandH(heightAt(tx + d, ty, seed)) || !isLandH(heightAt(tx - d, ty, seed)) ||
+              !isLandH(heightAt(tx, ty + d, seed)) || !isLandH(heightAt(tx, ty - d, seed))) coast = true;
+        }
+        if (coast && hash2((tx / 10) | 0, (ty / 10) | 0, seed + 55) > 0.84) return "rocky";
+      }
       if (moist > 0.60 && heat > 0.46) return "jungle";
       if (moist > 0.52) return "forest";
       return "plains";
     }
     function biomeLabel(b) {
-      return b === "jungle" ? "Selva" : b === "forest" ? "Floresta densa" : b === "swamp" ? "Pântano de slimes" : b === "sadlands" ? "Sadlands" : b === "ocean" ? "Mar" : "Planície";
+      return b === "jungle" ? "Selva"
+        : b === "forest" ? "Floresta densa"
+        : b === "swamp" ? "Pântano de slimes"
+        : b === "sadlands" ? "Sadlands"
+        : b === "snow" ? "Planície nevada"
+        : b === "desert" ? "Deserto"
+        : b === "rocky" ? "Costa rochosa"
+        : b === "ocean" ? "Mar" : "Planície";
     }
-    function findLandNear(seed, cx, cy, maxR = 80) {
-      if (isLandH(heightAt(cx, cy, seed))) return { x: cx, y: cy };
+    const structRects = [];
+    function inAnyStruct(tx, ty, pad) {
+      pad = pad || 0;
+      for (const r of structRects) {
+        if (tx >= r.x - pad && tx < r.x + r.w + pad && ty >= r.y - pad && ty < r.y + r.h + pad) return true;
+      }
+      return false;
+    }
+    function findLandNear(seed, cx, cy, maxR, clear) {
+      maxR = maxR == null ? 80 : maxR;
+      const ok = (x, y) => isLandH(heightAt(x, y, seed)) && (!clear || !inAnyStruct(x, y, 3));
+      if (ok(cx, cy)) return { x: cx, y: cy };
       for (let r = 1; r <= maxR; r++) {
         for (let dx = -r; dx <= r; dx++) {
           const spots = [
             { x: cx + dx, y: cy - r }, { x: cx + dx, y: cy + r },
             { x: cx - r, y: cy + dx }, { x: cx + r, y: cy + dx },
           ];
-          for (const s of spots) if (isLandH(heightAt(s.x, s.y, seed))) return s;
+          for (const s of spots) if (ok(s.x, s.y)) return s;
         }
       }
       return { x: cx, y: cy };
@@ -235,7 +276,7 @@
       const dist = minD + hash2(salt, 9, seed) * (maxD - minD);
       const tx = Math.round(Math.cos(ang) * dist);
       const ty = Math.round(Math.sin(ang) * dist);
-      return water ? findDeepWaterNear(seed, tx, ty, 80) : findLandNear(seed, tx, ty, 50);
+      return water ? findDeepWaterNear(seed, tx, ty, 80) : findLandNear(seed, tx, ty, 50, true);
     }
     function findBiomeNear(seed, want, cx, cy, maxR) {
       for (let r = 0; r <= maxR; r++) {
@@ -249,29 +290,23 @@
           }
         }
       }
-      return findLandNear(seed, cx, cy, maxR);
+      return findLandNear(seed, cx, cy, maxR, true);
     }
 
-    const COLORS = {
-      ocean: [28, 78, 122],
-      swampW: [42, 78, 52],
-      swamp: [58, 92, 48],
-      sand: [210, 192, 122],
-      plains: [109, 179, 106],
-      forest: [47, 107, 58],
-      jungle: [29, 74, 40],
-    };
     function colorAt(tx, ty, seed) {
       const h = heightAt(tx, ty, seed);
       const b = biomeAt(tx, ty, seed);
       const tile = tileFromH(h);
-      if (b === "ocean") return COLORS.ocean;
-      if (b === "sadlands") return tile === "water" ? [240,248,252] : [222,230,238];
-      if (b === "swamp") return tile === "water" ? COLORS.swampW : COLORS.swamp;
-      if (tile === "sand") return COLORS.sand;
-      if (b === "jungle") return COLORS.jungle;
-      if (b === "forest") return COLORS.forest;
-      return COLORS.plains;
+      if (b === "ocean") return [28, 78, 122];
+      if (b === "sadlands") return tile === "water" ? [240, 248, 252] : [180, 198, 220];
+      if (b === "snow") return tile === "water" ? [232, 240, 248] : [247, 251, 255];
+      if (b === "desert") return tile === "water" ? [42, 90, 110] : [212, 180, 106];
+      if (b === "rocky") return [138, 134, 128];
+      if (b === "swamp") return tile === "water" ? [42, 78, 52] : [58, 92, 48];
+      if (tile === "sand") return [210, 192, 122];
+      if (b === "jungle") return [29, 74, 40];
+      if (b === "forest") return [47, 107, 58];
+      return [109, 179, 106];
     }
 
     let seed = seedFromInput("942");
@@ -279,7 +314,7 @@
     const marks = [];
     const canvas = document.getElementById("map");
     const ctx = canvas.getContext("2d");
-    let cam = { x: 0, y: 0, z: 3 }; // z = pixels per tile
+    let cam = { x: 0, y: 0, z: 3 };
     let drag = null;
 
     function considerChunk(cx, cy, acc) {
@@ -288,12 +323,15 @@
       if (bio === "ocean") return;
       const roll = hash2(cx, cy, seed + 301);
       if (roll < 0.905) return;
-      const pos = findLandNear(seed, tx, ty, 10);
+      const pos = findLandNear(seed, tx, ty, 10, true);
+      if (inAnyStruct(pos.x, pos.y, 4)) return;
       const key = pos.x + "," + pos.y;
       if (acc.seen.has(key)) return;
       if (bio === "plains") {
         if (hash2(cx, 1, seed + 5) > 0.52) acc.push({ kind: "vila", x: pos.x, y: pos.y, extra: "chunk" });
         else acc.push({ kind: "mina", x: pos.x, y: pos.y, extra: "chunk" });
+      } else if (bio === "sadlands") {
+        return;
       } else if (bio === "forest") {
         if (hash2(cx, 2, seed + 6) > 0.48) acc.push({ kind: "masmorra", x: pos.x, y: pos.y, extra: "chunk" });
         else acc.push({ kind: "mago", x: pos.x, y: pos.y, extra: "chunk" });
@@ -308,15 +346,22 @@
 
     function rebuildMarks() {
       marks.length = 0;
-      marks.push({ kind: "spawn", x: 0, y: 0, extra: "centro" });
+      structRects.length = 0;
+      const pushRect = (x, y, w, h, pad) => {
+        structRects.push({ x: x - (pad || 0), y: y - (pad || 0), w: w + (pad || 0) * 2, h: h + (pad || 0) * 2 });
+      };
       const shipA = placeLandmark(seed, 41, 70, 180, true);
       const shipB = placeLandmark(seed, 103, 90, 220, true);
       marks.push({ kind: "navio", x: shipA.x, y: shipA.y, extra: "A" });
       marks.push({ kind: "navio", x: shipB.x, y: shipB.y, extra: "B" });
+      pushRect(shipA.x - 3, shipA.y - 1, 7, 3, 1);
+      pushRect(shipB.x - 3, shipB.y - 1, 7, 3, 1);
       const house = findBiomeNear(seed, "plains", 20, -10, 90);
       marks.push({ kind: "casa", x: house.x, y: house.y, extra: "abandonada" });
-      const vein = findLandNear(seed, -18, 22, 80);
+      pushRect(house.x - 2, house.y - 2, 4, 3, 2);
+      const vein = findLandNear(seed, -18, 22, 80, true);
       marks.push({ kind: "filao", x: vein.x, y: vein.y, extra: "" });
+      pushRect(vein.x - 2, vein.y - 2, 5, 5, 1);
       const acc = { seen: new Set(), push(m) { marks.push(m); } };
       for (let cy = -8; cy <= 8; cy++) for (let cx = -8; cx <= 8; cx++) considerChunk(cx, cy, acc);
       if (!marks.some((m) => m.kind === "vila")) {
@@ -335,10 +380,25 @@
         const p = findBiomeNear(seed, "forest", -22, -8, 140);
         marks.push({ kind: "mago", x: p.x, y: p.y, extra: "garantida" });
       }
+      for (let cy = -8; cy <= 8; cy++) for (let cx = -8; cx <= 8; cx++) {
+        const midBio = biomeAt(cx * CHUNK + 8, cy * CHUNK + 8, seed);
+        if (midBio === "snow" && hash2(cx, cy, seed + 201) > 0.88) {
+          const ix = cx * CHUNK + 3 + (hash2(cx, cy, seed + 202) * 6 | 0);
+          const iy = cy * CHUNK + 3 + (hash2(cx, cy, seed + 203) * 6 | 0);
+          marks.push({ kind: "iglu", x: ix, y: iy, extra: "chunk" });
+        }
+        if (midBio === "desert" && hash2(cx, cy, seed + 221) > 0.93) {
+          const px = cx * CHUNK + 2 + (hash2(cx, cy, seed + 222) * 4 | 0);
+          const py = cy * CHUNK + 2 + (hash2(cx, cy, seed + 223) * 4 | 0);
+          marks.push({ kind: "piramide", x: px, y: py, extra: "armadilha" });
+        }
+      }
+      const spawn = findLandNear(seed, 0, 0, 140, true);
+      marks.unshift({ kind: "spawn", x: spawn.x, y: spawn.y, extra: "terra livre" });
       const box = document.getElementById("list");
       box.innerHTML = marks.map((m) => {
-        const d = Math.hypot(m.x, m.y) | 0;
-        return "<div>" + m.kind + " · (" + m.x + "," + m.y + ") · " + d + " blocos" + (m.extra ? " · " + m.extra : "") + "</div>";
+        const d = Math.hypot(m.x - spawn.x, m.y - spawn.y) | 0;
+        return "<div>" + m.kind + " · (" + m.x + "," + m.y + ") · " + d + " do spawn" + (m.extra ? " · " + m.extra : "") + "</div>";
       }).join("");
     }
 
@@ -375,6 +435,7 @@
       const mkCol = {
         spawn: "#c44536", vila: "#e0b44b", mago: "#7a4ac8", masmorra: "#111",
         mina: "#8d5a32", casa: "#6b4423", navio: "#cfd6dc", filao: "#bbb",
+        iglu: "#eef4fa", piramide: "#c9a227",
       };
       marks.forEach((m) => {
         const sx = (m.x - cam.x) * z + w / 2;
@@ -383,7 +444,7 @@
         ctx.fillStyle = mkCol[m.kind] || "#fff";
         ctx.arc(sx, sy, Math.max(3.5, z * 0.7), 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = "#fff";
+        ctx.strokeStyle = "#111";
         ctx.lineWidth = 1;
         ctx.stroke();
         if (z >= 2.4) {
@@ -399,12 +460,10 @@
     function applySeed() {
       raw = document.getElementById("seed").value.trim();
       seed = seedFromInput(raw);
-      const n = Number(raw);
-      let note = "efetiva " + seed;
-      if (Number.isFinite(n) && (n >>> 0) !== seed) note += " · (digitada não é a usada)";
-      if (Number.isFinite(n) && n < 0) note += " · wrap 32 bits";
-      document.getElementById("eff").textContent = note;
+      document.getElementById("eff").textContent = "efetiva " + seed;
       rebuildMarks();
+      const sp = marks.find((m) => m.kind === "spawn");
+      if (sp) { cam.x = sp.x; cam.y = sp.y; }
       draw();
     }
 
@@ -457,7 +516,13 @@
       document.getElementById("seed").value = v;
       applySeed();
     };
-    document.getElementById("center").onclick = () => { cam.x = 0; cam.y = 0; cam.z = 3; draw(); };
+    document.getElementById("center").onclick = () => {
+      const sp = marks.find((m) => m.kind === "spawn");
+      cam.x = sp ? sp.x : 0;
+      cam.y = sp ? sp.y : 0;
+      cam.z = 3;
+      draw();
+    };
     window.addEventListener("resize", resize);
     applySeed();
     resize();
