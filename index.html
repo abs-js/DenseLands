@@ -1405,7 +1405,7 @@ body.four-finger.lefty #btn-b {
     <div id="drag-ghost" class="hidden"></div>
   </div>
 
-                                                <script>
+                                                  <script>
 (() => {
   "use strict";
 
@@ -6320,7 +6320,17 @@ body.four-finger.lefty #btn-b {
       ch.placed.push({ tx: px, ty: py, id: "bloco_pedra", hp: 9, pillar: true });
       burst(px * TILE + 20, py * TILE + 20, "#9aa0a8");
     }
-    const d = makeNightDragon(center.x * TILE + 20, center.y * TILE + 20);
+    const pillars = [];
+    for (let i = 0; i < 8; i++) {
+      const a = (Math.PI * 2 * i) / 8;
+      const px = center.x + Math.round(Math.cos(a) * 4);
+      const py = center.y + Math.round(Math.sin(a) * 4);
+      pillars.push({ x: px * TILE + 20, y: py * TILE + 20, tx: px, ty: py });
+    }
+    state.dragonPillars = pillars;
+    const d = makeNightDragon(pillars[0].x, pillars[0].y - 36);
+    d.perch = 0;
+    d.tx = pillars[1].x; d.ty = pillars[1].y - 36;
     state.nightMobs = state.nightMobs || [];
     state.nightMobs.push(d);
     state.dragonAlive = true;
@@ -6329,9 +6339,10 @@ body.four-finger.lefty #btn-b {
   function makeNightDragon(x, y) {
     return {
       type: "enemy", kind: "night_dragon", boss: true, x, y,
-      hp: 300, maxHp: 300, spd: 38, dmg: 8, r: 30,
-      phase: true, hurt: 0, cd: 0, alive: true, gold: 80,
-      atk: 0, wing: 0,
+      hp: 300, maxHp: 300, spd: 92, dmg: 8, r: 26,
+      phase: true, hurt: 0, cd: 0.8, alive: true, gold: 80,
+      wing: 0, tailCd: 0, moving: false,
+      ang: 0, segs: [{x, y}, {x: x - 18, y}, {x: x - 36, y}],
     };
   }
   function triggerEnding() {
@@ -7337,26 +7348,60 @@ body.four-finger.lefty #btn-b {
       };
       if (e.kind === "night_dragon") {
         e.wing = (e.wing || 0) + dt;
-        if (dist > 70) tryMove(e.x + (dx / (dist || 1)) * e.spd * dt, e.y + (dy / (dist || 1)) * e.spd * dt);
-        else if (dist < 48) tryMove(e.x - (dx / (dist || 1)) * e.spd * 0.6 * dt, e.y - (dy / (dist || 1)) * e.spd * 0.6 * dt);
+        e.tailCd = Math.max(0, (e.tailCd || 0) - dt);
+        const posts = state.dragonPillars || [];
+        if (!posts.length) {
+          e.tx = p.x; e.ty = p.y - 40;
+        } else if (e.tx == null || Math.hypot(e.x - e.tx, e.y - e.ty) < 18) {
+          let ni = (e.perch == null ? 0 : e.perch);
+          for (let k = 0; k < 8; k++) {
+            ni = (ni + 1 + ((Math.random() * (posts.length - 1)) | 0)) % posts.length;
+            if (ni !== e.perch) break;
+          }
+          e.perch = ni;
+          e.tx = posts[ni].x;
+          e.ty = posts[ni].y - 38;
+        }
+        const gx = (e.tx || e.x) - e.x, gy = (e.ty || e.y) - e.y;
+        const gl = Math.hypot(gx, gy) || 1;
+        const ox = e.x, oy = e.y;
+        e.x += (gx / gl) * e.spd * dt;
+        e.y += (gy / gl) * e.spd * dt;
+        e.moving = Math.hypot(e.x - ox, e.y - oy) > 0.4;
+        e.ang = Math.atan2(gy, gx);
+        e.segs = e.segs || [{x:e.x,y:e.y},{x:e.x,y:e.y},{x:e.x,y:e.y}];
+        const follow = (a, b, gap) => {
+          const fx = a.x - b.x, fy = a.y - b.y, fl = Math.hypot(fx, fy) || 1;
+          b.x = a.x - (fx / fl) * gap;
+          b.y = a.y - (fy / fl) * gap;
+        };
+        e.segs[0].x = e.x; e.segs[0].y = e.y;
+        follow(e.segs[0], e.segs[1], 22);
+        follow(e.segs[1], e.segs[2], 20);
+        if (e.moving && e.tailCd <= 0 && dist < 34) {
+          e.tailCd = 0.55;
+          windBurst(e.x, e.y, dx / (dist || 1), dy / (dist || 1));
+          if (hurtPlayer(9, "death.mob")) return;
+        }
         if (e.cd <= 0) {
-          e.atk = ((e.atk || 0) + 1) % 3;
-          e.cd = 1.35;
+          const roll = Math.random();
+          e.cd = 1.1 + Math.random() * 0.7;
           const l = dist || 1;
-          if (e.atk === 0) {
+          if (roll < 0.5) {
             if (!state.shots) state.shots = [];
-            state.shots.push({ x: e.x, y: e.y, vx: dx / l * 130, vy: dy / l * 130, t: 2.4, dmg: 7, from: "dragon", magic: true });
-          } else if (e.atk === 1) {
-            const bx = p.x + (Math.random() - 0.5) * 36, by = p.y + (Math.random() - 0.5) * 36;
-            state.bolt = { x: bx, y: by, t: 0.35 };
-            burst(bx, by, "#b48cff");
-            if (Math.hypot(p.x - bx, p.y - by) < 50) {
-              if (hurtPlayer(8, "death.mob")) return;
+            state.shots.push({
+              x: e.x + Math.cos(e.ang) * 16, y: e.y + Math.sin(e.ang) * 16,
+              vx: dx / l * 150, vy: dy / l * 150,
+              t: 2.2, dmg: 8, from: "dragon", fireball: true
+            });
+          } else {
+            state.dragonMarks = [];
+            for (let i = 0; i < 5; i++) {
+              const jx = (Math.random() - 0.5) * 110;
+              const jy = (Math.random() - 0.5) * 110;
+              state.dragonMarks.push({ x: p.x + jx, y: p.y + jy, t: 0.30 });
             }
-          } else if (dist < 64) {
-            windBurst(e.x, e.y, dx / l, dy / l);
-            if (hurtPlayer(10, "death.mob")) return;
-          } else e.cd = 0.35;
+          }
         }
       } else if (e.kind === "gosma" || e.kind === "rei_gosma") {
         e.hopT = (e.hopT || 0) - dt;
@@ -7397,7 +7442,7 @@ body.four-finger.lefty #btn-b {
           tryMove(e.x - (dy / dist) * e.spd * dt, e.y + (dx / dist) * e.spd * dt);
         }
       }
-      if (dist < 22 && e.cd <= 0 && !(e.night && inSafeVillage(p.x, p.y))) {
+      if (e.kind !== "night_dragon" && dist < 22 && e.cd <= 0 && !(e.night && inSafeVillage(p.x, p.y))) {
         e.cd = 0.9;
         if (hurtPlayer(e.dmg, "death.mob")) return;
       }
@@ -7446,6 +7491,22 @@ body.four-finger.lefty #btn-b {
       }
     }
 
+    if (state.dragonMarks && state.dragonMarks.length) {
+      for (let i = state.dragonMarks.length - 1; i >= 0; i--) {
+        const m = state.dragonMarks[i];
+        m.t -= dt;
+        if (m.t > 0) continue;
+        const jx = m.x + (Math.random() - 0.5) * 28;
+        const jy = m.y + (Math.random() - 0.5) * 28;
+        state.bolt = { x: jx, y: jy, t: 0.28, jagged: true };
+        burst(jx, jy, "#f4e08a");
+        if (Math.hypot(p.x - jx, p.y - jy) < 42) {
+          state.dragonMarks = [];
+          if (hurtPlayer(8, "death.mob")) return;
+        }
+        state.dragonMarks.splice(i, 1);
+      }
+    }
     if (state.dragonFanfare > 0) {
       state.dragonFanfare -= dt;
       if (Math.random() < 0.45) burst(p.x + (Math.random()-0.5)*90, p.y + (Math.random()-0.5)*90, "#e0b44b");
@@ -7568,6 +7629,32 @@ body.four-finger.lefty #btn-b {
       if (!tileVisible(Math.floor(e.x / TILE), Math.floor(e.y / TILE))) continue;
       const s = worldToScreen(e.x, e.y);
       const hopY = ((e.kind === "gosma" || e.kind === "rei_gosma") && e.hopping > 0) ? -10 : 0;
+      if (e.kind === "night_dragon") {
+        const segs = e.segs || [{x:e.x,y:e.y},{x:e.x-20,y:e.y},{x:e.x-40,y:e.y}];
+        const sizes = [[28, 16], [22, 14], [16, 11]];
+        segs.forEach((sg, i) => {
+          const sp = worldToScreen(sg.x, sg.y);
+          ctx.save();
+          ctx.translate(sp.x, sp.y);
+          ctx.rotate(e.ang || 0);
+          ctx.fillStyle = e.hurt > 0 ? "#fff" : (i === 0 ? "#1c1028" : i === 1 ? "#2a1840" : "#140818");
+          ctx.fillRect(-sizes[i][0] / 2, -sizes[i][1] / 2, sizes[i][0], sizes[i][1]);
+          ctx.strokeStyle = "#c9a227";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(-sizes[i][0] / 2, -sizes[i][1] / 2, sizes[i][0], sizes[i][1]);
+          if (i === 0) {
+            ctx.fillStyle = "#e8dcc8";
+            ctx.fillRect(6, -4, 4, 3);
+            ctx.fillRect(6, 1, 4, 3);
+          }
+          ctx.restore();
+        });
+        ctx.fillStyle = "#3a1010";
+        ctx.fillRect(s.x - 28, s.y - 40, 56, 5);
+        ctx.fillStyle = "#d05040";
+        ctx.fillRect(s.x - 28, s.y - 40, 56 * (e.hp / e.maxHp), 5);
+        continue;
+      }
       ctx.fillStyle = e.hurt > 0 ? "#fff" : (e.kind === "esqueleto" ? "#e8e4d8" : e.kind === "sombra" ? "#4b3a6a" : e.kind === "lobo" ? "#5a4638" : e.kind === "rei_gosma" ? "#3d8a38" : "#5aa35a");
       if (e.kind === "sombra") ctx.globalAlpha = 0.72;
       ctx.beginPath(); ctx.arc(s.x, s.y + hopY, e.r, 0, 7); ctx.fill();
@@ -7583,8 +7670,19 @@ body.four-finger.lefty #btn-b {
     if (state.shots) {
       for (const sh of state.shots) {
         const s = worldToScreen(sh.x, sh.y);
-        ctx.strokeStyle = "#e8dcc8";
-        ctx.lineWidth = 2;
+        if (sh.fireball) {
+          const grd = ctx.createRadialGradient(s.x, s.y, 2, s.x, s.y, 14);
+          grd.addColorStop(0, "#fff3c0");
+          grd.addColorStop(0.45, "#ff8a1a");
+          grd.addColorStop(1, "rgba(180,20,0,0)");
+          ctx.fillStyle = grd;
+          ctx.beginPath(); ctx.arc(s.x, s.y, 14, 0, 7); ctx.fill();
+          ctx.fillStyle = "#ff4a12";
+          ctx.beginPath(); ctx.arc(s.x, s.y, 6, 0, 7); ctx.fill();
+          continue;
+        }
+        ctx.strokeStyle = sh.magic ? "#c48cff" : "#e8dcc8";
+        ctx.lineWidth = sh.magic ? 3 : 2;
         ctx.beginPath();
         ctx.moveTo(s.x - sh.vx * 0.04, s.y - sh.vy * 0.04);
         ctx.lineTo(s.x + sh.vx * 0.02, s.y + sh.vy * 0.02);
@@ -7734,15 +7832,26 @@ body.four-finger.lefty #btn-b {
       ctx.fillStyle = "rgba(40,90,40,0.16)";
       ctx.fillRect(0, 0, W, H);
     }
+    if (state.dragonMarks) {
+      for (const m of state.dragonMarks) {
+        const sp = worldToScreen(m.x, m.y);
+        ctx.strokeStyle = "rgba(255,220,80," + (0.45 + (0.30 - m.t) * 1.4) + ")";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(sp.x - 10, sp.y); ctx.lineTo(sp.x + 10, sp.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(sp.x, sp.y - 10); ctx.lineTo(sp.x, sp.y + 10); ctx.stroke();
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, 7, 0, 7); ctx.stroke();
+      }
+    }
     if (state.bolt) {
       const spt = worldToScreen(state.bolt.x, state.bolt.y);
       ctx.strokeStyle = "#fff6c0";
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.moveTo(spt.x + 8, 0);
-      ctx.lineTo(spt.x - 6, spt.y * 0.45);
-      ctx.lineTo(spt.x + 10, spt.y * 0.55);
-      ctx.lineTo(spt.x, spt.y);
+      ctx.moveTo(spt.x + (state.bolt.jagged ? 14 : 8), 0);
+      ctx.lineTo(spt.x - 10, spt.y * 0.28);
+      ctx.lineTo(spt.x + 16, spt.y * 0.42);
+      ctx.lineTo(spt.x - 8, spt.y * 0.62);
+      ctx.lineTo(spt.x + 6, spt.y);
       ctx.stroke();
     }
     if (state.hurtFlash > 0) {
