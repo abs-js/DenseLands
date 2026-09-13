@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+width="512"
+height="512"
+viewBox="0 0 512 512">
+
+
+<!-- fundo -->
+<rect width="512" height="512" fill="#111111"/>
+
+
+<!-- montanha -->
+<polygon
+points="70,400 210,150 350,400"
+fill="#3c8d40"/>
+
+
+<!-- cristal -->
+<polygon
+points="256,80 330,220 256,360 182,220"
+fill="#00d9ff"/>
+
+<polygon
+points="256,80 256,360 330,220"
+fill="#0088aa"/>
+
+
+<!-- letra D -->
+<text
+x="256"
+y="455"
+font-size="170"
+font-family="Arial"
+font-weight="bold"
+text-anchor="middle"
+fill="white">
+D
+</text>
+
+
+</svg>
