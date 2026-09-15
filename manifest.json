@@ -12,8 +12,6 @@
 
   "display": "fullscreen",
 
-  "orientation": "landscape",
-
   "background_color": "#111111",
 
   "theme_color": "#111111",
@@ -34,7 +32,7 @@
 
   "shortcuts": [
     {
-      "name": "Jogar DenseLands",
+      "name": "Jogar DenseLands - By Artur",
       "url": "./index.html",
       "icons": [
         {
