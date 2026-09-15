@@ -54,7 +54,7 @@ html, body, #app {
   background: #0b1620;
   color: var(--paper);
   font-family: Nunito, system-ui, sans-serif;
-  touch-action: none;
+  touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -64,6 +64,7 @@ html, body, #app {
   width: 100%;
   height: 100%;
   image-rendering: pixelated;
+  touch-action: none;
 }
 
 .hidden { display: none !important; }
@@ -501,17 +502,30 @@ label.check input { width: auto; }
     radial-gradient(circle at 80% 80%, rgba(28,93,122,0.35), transparent 45%),
     #0b1620;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: safe center;
+  justify-content: safe center;
   z-index: 30;
-  padding: 16px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
 }
 .menu-card {
-  width: min(440px, 96vw);
+  width: min(440px, calc(100vw - 24px));
+  max-width: 100%;
+  max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   background: rgba(12,18,26,0.88);
   border: 1px solid rgba(255,255,255,0.12);
   border-radius: 20px;
-  padding: 28px 22px;
+  padding: 22px 18px;
+  margin: auto;
 }
 .logo { text-align: center; margin-bottom: 22px; }
 .logo-mark { font-size: 36px; color: var(--gold); }
@@ -733,6 +747,20 @@ input, select {
 #menu-biome.bio-jungle { background-image: linear-gradient(#1e5a28 50%, #2f7a38 50%), linear-gradient(90deg, #1e5a28 50%, #2f7a38 50%); background-size: 48px 48px; }
 #menu-biome.bio-swamp { background-image: linear-gradient(#3a5a28 50%, #2a4030 50%), linear-gradient(90deg, #4a6a20 50%, #1a3028 50%); background-size: 48px 48px; }
 .menu-card { position: relative; z-index: 1; }
+#menu input, #menu textarea, #menu button, #menu label { touch-action: manipulation; }
+@media (max-width: 520px) {
+  .logo-mark { font-size: 28px; }
+  .logo h1 { font-size: 14px; }
+  .logo { margin-bottom: 12px; }
+  .menu-card { padding: 16px 14px; }
+  .pass-row { flex-wrap: wrap; }
+  .big-btn { padding: 10px; font-size: 15px; }
+}
+@media (max-height: 560px) {
+  .logo { margin-bottom: 8px; }
+  .logo-mark { font-size: 22px; }
+  .menu-card { padding: 12px 12px; }
+}
 .story { line-height: 1.45; margin: 8px 0 14px; }
 .warn { color: #ffb0a0; }
 .pass-row { display: flex; gap: 12px; align-items: flex-end; }
@@ -2499,8 +2527,12 @@ body.four-finger.lefty #btn-b {
       const i = ty * CHUNK + lx;
       if (tiles[i] === TILES.GRASS) {
         const midB = biomeAt(tx, ty, seed);
-        const kind = midB === "snow" ? "urso" : (hash2(cx, cy, seed + 20) > 0.5 ? "vaca" : "ovelha");
-        animals.push(makeAnimal(tx * TILE + 20, ty * TILE + 20, kind, "c" + cx + "_" + cy));
+        let kind = hash2(cx, cy, seed + 20) > 0.5 ? "vaca" : "ovelha";
+        if (midB === "snow") kind = "urso";
+        else if (hash2(cx, cy, seed + 21) > 0.94) kind = "trader";
+        const aid = "c" + cx + "_" + cy + "_" + kind;
+        if (!animals.some((a) => a.id === aid))
+          animals.push(makeAnimal(tx * TILE + 20, ty * TILE + 20, kind, aid));
       }
     }
     const chunk = { cx, cy, tiles, trees, rocks, ores, enemies: [], placed: [], animals, foundAt: state.time || 0, bio: biomeAt(cx * CHUNK + 8, cy * CHUNK + 8, seed) };
@@ -2571,10 +2603,13 @@ body.four-finger.lefty #btn-b {
       });
     }
     if (midBio === "swamp" && hash2(cx, cy, seed + 33) > 0.45) {
-      const ax = (cx * CHUNK + 4) * TILE + 20, ay = (cy * CHUNK + 4) * TILE + 20;
-      const sl = makeEnemy(ax, ay, seed + cx * 17 + cy);
-      sl.kind = "gosma"; sl.hp = sl.maxHp = 10; sl.spd = 28; sl.dmg = 2; sl.gold = 2;
-      chunk.enemies.push(sl);
+      if (!chunk.enemies.some((e) => e.kind === "gosma" && e.alive !== false)) {
+        const ax = (cx * CHUNK + 4) * TILE + 20, ay = (cy * CHUNK + 4) * TILE + 20;
+        const sl = makeEnemy(ax, ay, seed + cx * 17 + cy);
+        sl.id = "g" + cx + "_" + cy;
+        sl.kind = "gosma"; sl.hp = sl.maxHp = 10; sl.spd = 22; sl.dmg = 2; sl.gold = 2;
+        chunk.enemies.push(sl);
+      }
     }
     stampStructures(chunk);
     state.chunks.set(key, chunk);
@@ -2988,15 +3023,29 @@ body.four-finger.lefty #btn-b {
     };
   }
 
+  let mobSeq = 1;
+  function nextMobId(prefix) {
+    mobSeq += 1;
+    return prefix + "_" + mobSeq + "_" + ((Math.random() * 1e9) | 0);
+  }
+  function normalizeMob(kind) {
+    if (kind === "vaca" || kind === "ovelha" || kind === "urso" || kind === "trader") return kind;
+    if (kind === "sombra" || kind === "esqueleto" || kind === "gosma" || kind === "rei_gosma") return kind;
+    if (kind === "night_dragon") return kind;
+    if (kind === "lobo" || kind === "olho") return "sombra";
+    return "ovelha";
+  }
   function makeAnimal(x, y, kind, id) {
+    kind = normalizeMob(kind);
+    if (kind !== "vaca" && kind !== "ovelha" && kind !== "urso" && kind !== "trader") kind = "ovelha";
     return {
       type: "animal",
-      id: id || ("a" + Math.floor(x) + "_" + Math.floor(y) + "_" + kind),
+      id: id || nextMobId("a_" + kind),
       kind,
       x, y,
       hp: kind === "urso" ? 18 : kind === "vaca" ? 10 : 6,
       maxHp: kind === "urso" ? 18 : kind === "vaca" ? 10 : 6,
-      spd: kind === "urso" ? 36 : kind === "vaca" ? 28 : 34,
+      spd: kind === "urso" ? 36 : kind === "trader" ? 32 : kind === "vaca" ? 28 : 34,
       r: kind === "urso" ? 16 : kind === "vaca" ? 14 : 11,
       agro: false,
       wait: Math.random() * 2,
@@ -3051,6 +3100,7 @@ body.four-finger.lefty #btn-b {
       let kind = Math.random() > 0.45 ? "vaca" : "ovelha";
       if (bio === "snow") kind = "urso";
       else if (Math.random() < 0.06) kind = "trader";
+      if (ch.animals.some((a) => Math.hypot((a.x||0)-x,(a.y||0)-y) < 28)) continue;
       ch.animals.push(makeAnimal(x, y, kind));
       break;
     }
@@ -3058,8 +3108,21 @@ body.four-finger.lefty #btn-b {
 
   function allAnimals() {
     const out = [];
+    const seen = new Set();
     for (const ch of state.chunks.values()) {
-      for (const a of (ch.animals || [])) out.push(a);
+      const keep = [];
+      for (const a of (ch.animals || [])) {
+        if (!a) continue;
+        a.kind = normalizeMob(a.kind);
+        if (a.kind !== "vaca" && a.kind !== "ovelha" && a.kind !== "urso" && a.kind !== "trader") a.kind = "ovelha";
+        if (!a.id) a.id = nextMobId("a_" + a.kind);
+        const k = a.id;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        keep.push(a);
+        out.push(a);
+      }
+      ch.animals = keep;
     }
     return out;
   }
@@ -3152,9 +3215,10 @@ body.four-finger.lefty #btn-b {
 
   function makeEnemy(x, y, salt) {
     const roll = hash2(Math.floor(x), Math.floor(y), salt);
-    const kind = roll > 0.72 ? "esqueleto" : roll > 0.4 ? "sombra" : "gosma";
+    const kind = roll > 0.5 ? "esqueleto" : "sombra";
     const e0 = {
       type: "enemy",
+      id: nextMobId("e_" + kind),
       kind,
       x, y,
       hp: kind === "sombra" ? 16 : kind === "esqueleto" ? 12 : 10,
@@ -3181,7 +3245,7 @@ body.four-finger.lefty #btn-b {
   function makeKingSlime(x, y) {
     const m = diffEnemyMul();
     return {
-      type: "enemy", kind: "rei_gosma", x, y,
+      type: "enemy", id: nextMobId("e_rei"), kind: "rei_gosma", x, y,
       hp: Math.round(90 * m), maxHp: Math.round(90 * m),
       spd: 22, dmg: Math.round(9 * m), r: 22,
       hopT: 0, hopping: 0, hurt: 0, cd: 0, alive: true, gold: 40, boss: true,
@@ -6710,29 +6774,41 @@ body.four-finger.lefty #btn-b {
       if (blockedTile(tileAt(tx, ty))) continue;
       if (inSafeVillage(x, y)) continue;
       if (torchLightAt(x, y) > 0.22) continue;
+      if ((state.nightMobs || []).some((o) => o.alive && Math.hypot(o.x - x, o.y - y) < 50)) continue;
       const e = makeEnemy(x, y, (Math.random() * 9999) | 0);
-      if (Math.random() > 0.4) {
-        e.kind = "esqueleto";
-        e.hp = e.maxHp = 12;
-        e.spd = 42;
-        e.dmg = 3;
-      }
+      e.kind = Math.random() > 0.45 ? "esqueleto" : "sombra";
+      e.hp = e.maxHp = e.kind === "sombra" ? 16 : 12;
+      e.spd = e.kind === "sombra" ? 28 : 42;
+      e.dmg = e.kind === "sombra" ? 4 : 3;
+      e.phase = e.kind === "sombra";
       e.night = true;
-      e.kind = Math.random() > 0.5 ? "olho" : "lobo";
-      e.hp = e.maxHp = e.kind === "lobo" ? 12 : 8;
-      e.spd = e.kind === "lobo" ? 70 : 50;
-      e.dmg = e.kind === "lobo" ? 3 : 2;
-      e.gold = 3;
+      e.gold = e.kind === "sombra" ? 8 : 5;
+      e.id = "n" + Math.floor(x) + "_" + Math.floor(y) + "_" + state.nightMobs.length;
       state.nightMobs.push(e);
     }
   }
 
   function allEnemies() {
-    if (state.dim) return state.dim.enemies;
-    const out = state.nightMobs.slice();
-    for (const ch of state.chunks.values()) {
-      for (const e of ch.enemies) out.push(e);
-    }
+    const seen = new Set();
+    const pushu = (list, arr) => {
+      for (const e of arr || []) {
+        if (!e) continue;
+        if (e.kind === "lobo" || e.kind === "olho") e.kind = "sombra";
+        if (!e.id) e.id = nextMobId("e_" + (e.kind || "mob"));
+        if (e.kind === "gosma" && !e.boss) {
+          const bio = (state.room && !state.dim) ? biomeAt(Math.floor(e.x / TILE), Math.floor(e.y / TILE), state.room.seed) : "swamp";
+          if (!state.dim && bio !== "swamp") { e.alive = false; continue; }
+        }
+        const k = e.id;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        list.push(e);
+      }
+    };
+    const out = [];
+    if (state.dim) { pushu(out, state.dim.enemies); return out; }
+    pushu(out, state.nightMobs);
+    for (const ch of state.chunks.values()) pushu(out, ch.enemies);
     return out;
   }
 
@@ -6844,10 +6920,11 @@ body.four-finger.lefty #btn-b {
       if (w === "rei_gosma") {
         state.weatherT = 80;
         showMsg("O pântano ferve. O Gosma Rei desperta.");
+        state.nightMobs = state.nightMobs || [];
         if (!(state.nightMobs || []).some((e) => e.kind === "rei_gosma" && e.alive)) {
           const ang = Math.random() * 6.28, d = 70 + Math.random() * 50;
           const boss = makeKingSlime(state.player.x + Math.cos(ang) * d, state.player.y + Math.sin(ang) * d);
-          state.nightMobs = state.nightMobs || [];
+          boss.night = true;
           state.nightMobs.push(boss);
         }
       } else if (w !== "claro") showMsg(weatherLabel(w) + ".");
