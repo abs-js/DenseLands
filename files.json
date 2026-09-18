@@ -1,0 +1,14 @@
+{
+  "id": "denselands",
+  "version": "1.0.0",
+  "entry": "index.html",
+  "keep": ["index.html", "icon.svg"],
+  "files": [
+    "icon.svg",
+    "card.png",
+    "manifest.json",
+    "service-worker.js",
+    "map.html",
+    "wiki.html"
+  ]
+}
